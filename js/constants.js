@@ -15,3 +15,7 @@ const REFRESH_INTERVALS = [
   { value: 60, label: '1 minute' },
   { value: 300, label: '5 minutes' }
 ]
+
+// disabling for now because we only have usage data for chronos.
+// once enabled should display graphs and stuff...
+const POLL_USAGE = false
