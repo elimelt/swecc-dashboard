@@ -2,11 +2,11 @@ class MetricsService {
   constructor() {
     this.containersList = {};
     this.containerDetails = {};
+    this.containerUsage = {};
     this.lastFetchTimestamp = null;
   }
 
-  // Fetch containers list with status
-  async fetchContainers() {
+    async fetchContainers() {
     try {
       const response = await withCsrf(() => api.get('/metrics/containers/'));
 
@@ -25,8 +25,7 @@ class MetricsService {
     }
   }
 
-  // Fetch detailed information for a specific container
-  async fetchContainerDetails(containerName) {
+    async fetchContainerDetails(containerName) {
     try {
       const response = await withCsrf(() => api.get(`/metrics/containers/${containerName}`));
 
@@ -43,28 +42,66 @@ class MetricsService {
     }
   }
 
-  // Get all container names with their status
-  getContainers() {
+    async fetchContainerUsage(containerName) {
+    try {
+      const response = await withCsrf(() => api.get(`/metrics/usage/${containerName}`));
+
+      if (response.status === 200) {
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          this.containerUsage[containerName] = response.data;
+          log(`Fetched ${response.data.length} usage records for ${containerName}`);
+          return response.data;
+        } else {
+          log(`No usage data available for ${containerName}`);
+          this.containerUsage[containerName] = [];
+          return [];
+        }
+      }
+
+      return null;
+    } catch (error) {
+      log(`Error fetching usage for ${containerName}:`, error);
+      this.containerUsage[containerName] = [];
+      return null;
+    }
+  }
+
+    hasUsageData(containerName) {
+    return containerName in this.containerUsage &&
+           this.containerUsage[containerName] &&
+           this.containerUsage[containerName].length > 0;
+  }
+
+    getContainerUsage(containerName) {
+    return this.containerUsage[containerName] || [];
+  }
+
+    getLatestUsage(containerName) {
+    if (!this.hasUsageData(containerName)) return null;
+
+        const usage = [...this.containerUsage[containerName]];
+    usage.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return usage[0] || null;
+  }
+
+    getContainers() {
     return this.containersList;
   }
 
-  // Get container names as an array
-  getContainerNames() {
+    getContainerNames() {
     return Object.keys(this.containersList).sort();
   }
 
-  // Get container status
-  getContainerStatus(containerName) {
+    getContainerStatus(containerName) {
     return this.containersList[containerName] || 'unknown';
   }
 
-  // Get detailed information for a container
-  getContainerDetails(containerName) {
+    getContainerDetails(containerName) {
     return this.containerDetails[containerName] || null;
   }
 
-  // Format utilities
-  formatBytes(bytes, decimals = 2) {
+    formatBytes(bytes, decimals = 2) {
     if (!bytes || bytes === 0) return '0 Bytes';
 
     const k = 1024;
@@ -106,8 +143,7 @@ class MetricsService {
     }
   }
 
-  // Extract port mapping information from container details
-  getPortMappings(containerDetails) {
+    getPortMappings(containerDetails) {
     if (!containerDetails || !containerDetails.ports) {
       return [];
     }
@@ -127,8 +163,7 @@ class MetricsService {
     return portMappings;
   }
 
-  // Get important labels from container
-  getContainerLabels(containerDetails) {
+    getContainerLabels(containerDetails) {
     if (!containerDetails || !containerDetails.labels) {
       return {};
     }

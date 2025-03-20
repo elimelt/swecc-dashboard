@@ -1,25 +1,24 @@
 class Dashboard {
   constructor() {
     this.currentContainer = null;
-    this.refreshInterval = 30; // Default interval in seconds
-    this.refreshTimer = null;
-    this.chart = null;
+    this.refreshInterval = 30;     this.refreshTimer = null;
+    this.charts = {
+      memory: null,
+      network: null
+    };
   }
 
   initialize() {
-    // Set up event listeners
-    document.getElementById('container-selector').addEventListener('change', this.handleContainerChange.bind(this));
+        document.getElementById('container-selector').addEventListener('change', this.handleContainerChange.bind(this));
     document.getElementById('refresh-interval').addEventListener('change', this.handleRefreshIntervalChange.bind(this));
     document.getElementById('refresh-btn').addEventListener('click', this.refreshData.bind(this));
   }
 
   async loadDashboard() {
     try {
-      // Show loading state
-      this.setLoadingState(true);
+            this.setLoadingState(true);
 
-      // Fetch container list
-      const success = await metricsService.fetchContainers();
+            const success = await metricsService.fetchContainers();
 
       if (!success) {
         log('Failed to load container data');
@@ -27,19 +26,16 @@ class Dashboard {
         return false;
       }
 
-      // Populate container selector
-      this.populateContainerSelector();
+            this.populateContainerSelector();
 
-      // If we have containers, select the first one
-      const containerNames = metricsService.getContainerNames();
+            const containerNames = metricsService.getContainerNames();
       if (containerNames.length > 0) {
         this.selectContainer(containerNames[0]);
       } else {
         this.showError('No containers found.');
       }
 
-      // Set up auto-refresh
-      this.setupAutoRefresh();
+            this.setupAutoRefresh();
 
       return true;
     } catch (error) {
@@ -63,12 +59,10 @@ class Dashboard {
     errorElement.className = 'error-message dashboard-error';
     errorElement.textContent = message;
 
-    // Remove any existing error messages
-    const existingErrors = document.querySelectorAll('.dashboard-error');
+        const existingErrors = document.querySelectorAll('.dashboard-error');
     existingErrors.forEach(el => el.remove());
 
-    // Insert the error message at the top of the dashboard
-    const dashboard = document.getElementById('dashboard');
+        const dashboard = document.getElementById('dashboard');
     dashboard.insertBefore(errorElement, dashboard.firstChild);
   }
 
@@ -76,17 +70,14 @@ class Dashboard {
     const containerSelector = document.getElementById('container-selector');
     const containers = metricsService.getContainers();
 
-    // Clear existing options
-    containerSelector.innerHTML = '';
+        containerSelector.innerHTML = '';
 
-    // Add options for each container
-    Object.entries(containers).forEach(([name, status]) => {
+        Object.entries(containers).forEach(([name, status]) => {
       const option = document.createElement('option');
       option.value = name;
       option.textContent = `${name} (${status})`;
 
-      // Add a class based on status
-      option.classList.add(`status-${status}`);
+            option.classList.add(`status-${status}`);
 
       containerSelector.appendChild(option);
     });
@@ -101,20 +92,24 @@ class Dashboard {
     this.currentContainer = containerName;
     document.getElementById('container-selector').value = containerName;
 
-    // Show loading state
-    this.setLoadingState(true);
+        this.setLoadingState(true);
 
     try {
-      // Fetch detailed container information
-      const details = await metricsService.fetchContainerDetails(containerName);
+            const detailsPromise = metricsService.fetchContainerDetails(containerName);
+
+            const usagePromise = metricsService.fetchContainerUsage(containerName);
+
+            const details = await detailsPromise;
 
       if (!details) {
         log(`Failed to fetch details for ${containerName}`);
         this.showError(`Failed to load details for ${containerName}.`);
       }
 
-      // Update the dashboard with the selected container's data
-      this.updateDashboard();
+            this.updateDashboard();
+
+            await usagePromise;
+      this.updateUsageCharts();
     } catch (error) {
       log('Error selecting container:', error);
       this.showError(`An error occurred while loading details for ${containerName}.`);
@@ -127,19 +122,16 @@ class Dashboard {
     const intervalSeconds = parseInt(event.target.value, 10);
     this.refreshInterval = intervalSeconds;
 
-    // Reset auto-refresh timer
-    this.setupAutoRefresh();
+        this.setupAutoRefresh();
   }
 
   setupAutoRefresh() {
-    // Clear existing timer
-    if (this.refreshTimer) {
+        if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
       this.refreshTimer = null;
     }
 
-    // Set up new timer if interval is greater than 0
-    if (this.refreshInterval > 0) {
+        if (this.refreshInterval > 0) {
       this.refreshTimer = setInterval(
         this.refreshData.bind(this),
         this.refreshInterval * 1000
@@ -154,22 +146,23 @@ class Dashboard {
     try {
       this.setLoadingState(true);
 
-      // Refresh containers list
-      await metricsService.fetchContainers();
+            await metricsService.fetchContainers();
 
-      // Update container selector
-      this.populateContainerSelector();
+            this.populateContainerSelector();
 
-      // Refresh details for current container
-      if (this.currentContainer) {
-        await metricsService.fetchContainerDetails(this.currentContainer);
+            if (this.currentContainer) {
+                const detailsPromise = metricsService.fetchContainerDetails(this.currentContainer);
+        const usagePromise = metricsService.fetchContainerUsage(this.currentContainer);
+
+                await detailsPromise;
+
+                this.updateDashboard();
+
+                await usagePromise;
+        this.updateUsageCharts();
       }
 
-      // Update the dashboard
-      this.updateDashboard();
-
-      // Remove any error messages since refresh was successful
-      const existingErrors = document.querySelectorAll('.dashboard-error');
+            const existingErrors = document.querySelectorAll('.dashboard-error');
       existingErrors.forEach(el => el.remove());
     } catch (error) {
       log('Error refreshing data:', error);
@@ -182,51 +175,236 @@ class Dashboard {
   updateDashboard() {
     if (!this.currentContainer) return;
 
-    // Get the container status
-    const status = metricsService.getContainerStatus(this.currentContainer);
+        const status = metricsService.getContainerStatus(this.currentContainer);
 
-    // Get container details if available
-    const containerDetails = metricsService.getContainerDetails(this.currentContainer);
+        const containerDetails = metricsService.getContainerDetails(this.currentContainer);
 
-    // Update overview panel
-    this.updateOverview(status, containerDetails);
+        this.updateOverview(status, containerDetails);
 
-    // Update container details panel
-    this.updateContainerDetails(containerDetails);
+        this.updateContainerDetails(containerDetails);
 
-    // Update ports panel
-    this.updatePortsPanel(containerDetails);
+        this.updatePortsPanel(containerDetails);
 
-    // Update labels panel
-    this.updateLabelsPanel(containerDetails);
+        this.updateLabelsPanel(containerDetails);
 
-    // Remove history panel since we have no real data for it
-    const historyPanel = document.getElementById('history-panel');
-    if (historyPanel) {
-      historyPanel.style.display = 'none';
+        const latestUsage = metricsService.getLatestUsage(this.currentContainer);
+    if (latestUsage) {
+      this.updateResourceMetrics(latestUsage);
+    }
+  }
+
+  updateUsageCharts() {
+    if (!this.currentContainer) return;
+
+        const usagePanel = document.getElementById('usage-panel');
+    if (!metricsService.hasUsageData(this.currentContainer)) {
+      if (usagePanel) {
+        usagePanel.style.display = 'none';
+      }
+      return;
+    }
+
+        if (usagePanel) {
+      usagePanel.style.display = 'block';
+    }
+
+        const usageData = metricsService.getContainerUsage(this.currentContainer);
+
+        this.updateMemoryChart(usageData);
+
+        this.updateNetworkChart(usageData);
+  }
+
+  updateMemoryChart(usageData) {
+    if (!usageData || usageData.length === 0) return;
+
+    const ctx = document.getElementById('memory-chart').getContext('2d');
+
+        const timestamps = usageData.map(data => {
+      const date = new Date(data.timestamp);
+      return date.toLocaleTimeString();
+    });
+
+    const memoryPercent = usageData.map(data => data.memory_percent);
+
+        if (this.charts.memory) {
+      this.charts.memory.data.labels = timestamps;
+      this.charts.memory.data.datasets[0].data = memoryPercent;
+      this.charts.memory.update();
+    } else {
+      this.charts.memory = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timestamps,
+          datasets: [{
+            label: 'Memory Usage (%)',
+            data: memoryPercent,
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Memory Usage (%)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  updateNetworkChart(usageData) {
+    if (!usageData || usageData.length === 0) return;
+
+    const ctx = document.getElementById('network-chart').getContext('2d');
+
+        const timestamps = usageData.map(data => {
+      const date = new Date(data.timestamp);
+      return date.toLocaleTimeString();
+    });
+
+    const rxBytes = usageData.map(data => data.nw_rx_bytes / 1024);     const txBytes = usageData.map(data => data.nw_tx_bytes / 1024);
+        if (this.charts.network) {
+      this.charts.network.data.labels = timestamps;
+      this.charts.network.data.datasets[0].data = rxBytes;
+      this.charts.network.data.datasets[1].data = txBytes;
+      this.charts.network.update();
+    } else {
+      this.charts.network = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timestamps,
+          datasets: [
+            {
+              label: 'Data Received (KB)',
+              data: rxBytes,
+              borderColor: 'rgba(75, 192, 192, 1)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Data Transmitted (KB)',
+              data: txBytes,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Network Traffic (KB)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  updateResourceMetrics(usage) {
+        const memoryUsage = document.getElementById('metric-memory-usage');
+    const memoryLimit = document.getElementById('metric-memory-limit');
+    const memoryPercent = document.getElementById('metric-memory-percent');
+    const memoryBar = document.getElementById('memory-usage-bar');
+
+    if (memoryUsage && memoryLimit && memoryPercent && memoryBar) {
+      memoryUsage.textContent = metricsService.formatBytes(usage.memory_usage_bytes);
+      memoryLimit.textContent = metricsService.formatBytes(usage.memory_limit_bytes);
+      memoryPercent.textContent = `${usage.memory_percent}%`;
+      memoryBar.style.width = `${usage.memory_percent}%`;
+
+            if (usage.memory_percent > 80) {
+        memoryBar.style.backgroundColor = 'var(--color-danger)';
+      } else if (usage.memory_percent > 60) {
+        memoryBar.style.backgroundColor = 'var(--color-warning)';
+      } else {
+        memoryBar.style.backgroundColor = 'var(--color-success)';
+      }
+    }
+
+        const diskRead = document.getElementById('metric-disk-read');
+    const diskWrite = document.getElementById('metric-disk-write');
+    const diskOps = document.getElementById('metric-disk-ops');
+
+    if (diskRead && diskWrite && diskOps) {
+      diskRead.textContent = metricsService.formatBytes(usage.disk_read_bytes);
+      diskWrite.textContent = metricsService.formatBytes(usage.disk_write_bytes);
+      diskOps.textContent = `${metricsService.formatNumber(usage.disk_reads)} reads / ${metricsService.formatNumber(usage.disk_writes)} writes`;
+    }
+
+        const netRx = document.getElementById('metric-net-rx');
+    const netTx = document.getElementById('metric-net-tx');
+    const netPackets = document.getElementById('metric-net-packets');
+    const netErrors = document.getElementById('metric-net-errors');
+
+    if (netRx && netTx && netPackets && netErrors) {
+      netRx.textContent = metricsService.formatBytes(usage.nw_rx_bytes);
+      netTx.textContent = metricsService.formatBytes(usage.nw_tx_bytes);
+      netPackets.textContent = `${metricsService.formatNumber(usage.nw_rx_packets)} / ${metricsService.formatNumber(usage.nw_tx_packets)}`;
+      netErrors.textContent = `${metricsService.formatNumber(usage.nw_rx_errors)} / ${metricsService.formatNumber(usage.nw_tx_errors)}`;
+    }
+
+        const cpuOnline = document.getElementById('metric-cpu-online');
+    const cpuSystem = document.getElementById('metric-cpu-system');
+
+    if (cpuOnline && cpuSystem) {
+      cpuOnline.textContent = usage.online_cpus;
+      cpuSystem.textContent = usage.system_cpu_usage.toExponential(2);
+    }
+
+        const resourcePanel = document.getElementById('resource-metrics');
+    if (resourcePanel) {
+      resourcePanel.style.display = 'block';
     }
   }
 
   updateOverview(status, details) {
-    // Container Status
-    const statusElement = document.getElementById('metric-status');
+        const statusElement = document.getElementById('metric-status');
     statusElement.textContent = status || 'unknown';
     statusElement.className = 'metric-value status-' + (status || 'unknown');
 
-    // Container ID
-    document.getElementById('metric-container-id').textContent =
+        document.getElementById('metric-container-id').textContent =
       details?.short_id ? details.short_id : 'N/A';
 
-    // Creation date
-    const createdAt = details?.created_at ? metricsService.formatDate(details.created_at) : 'N/A';
+        const createdAt = details?.created_at ? metricsService.formatDate(details.created_at) : 'N/A';
     document.getElementById('metric-created').textContent = createdAt;
 
-    // Uptime (if we have creation date)
-    const uptime = details?.created_at ? metricsService.formatDuration(details.created_at) : 'N/A';
+        const uptime = details?.created_at ? metricsService.formatDuration(details.created_at) : 'N/A';
     document.getElementById('metric-uptime').textContent = uptime;
 
-    // Image
-    document.getElementById('metric-image').textContent =
+        document.getElementById('metric-image').textContent =
       details?.image ? details.image : 'N/A';
   }
 
@@ -238,19 +416,15 @@ class Dashboard {
 
     document.getElementById('container-details').style.display = 'block';
 
-    // Display container name and ID
-    document.getElementById('detail-name').textContent = details.name;
+        document.getElementById('detail-name').textContent = details.name;
     document.getElementById('detail-id').textContent = details.short_id || 'N/A';
 
-    // Display image info
-    document.getElementById('detail-image').textContent = details.image || 'N/A';
+        document.getElementById('detail-image').textContent = details.image || 'N/A';
 
-    // Display creation time
-    document.getElementById('detail-created').textContent =
+        document.getElementById('detail-created').textContent =
       details.created_at ? metricsService.formatDate(details.created_at) : 'N/A';
 
-    // Display command if available
-    document.getElementById('detail-command').textContent =
+        document.getElementById('detail-command').textContent =
       details.command ? details.command : 'N/A';
   }
 
@@ -266,11 +440,9 @@ class Dashboard {
     portsPanel.style.display = 'block';
     portsGrid.innerHTML = '';
 
-    // Get port mappings
-    const portMappings = metricsService.getPortMappings(details);
+        const portMappings = metricsService.getPortMappings(details);
 
-    // Create port mapping cards
-    portMappings.forEach(mapping => {
+        portMappings.forEach(mapping => {
       const portCard = document.createElement('div');
       portCard.className = 'metric-card';
 
@@ -300,31 +472,26 @@ class Dashboard {
     labelsPanel.style.display = 'block';
     labelsGrid.innerHTML = '';
 
-    // Get important labels
-    const importantLabels = metricsService.getContainerLabels(details);
+        const importantLabels = metricsService.getContainerLabels(details);
 
-    // If no important labels, show a selection of available labels
-    const labelsToShow = Object.keys(importantLabels).length > 0 ?
+        const labelsToShow = Object.keys(importantLabels).length > 0 ?
       importantLabels :
       Object.fromEntries(
         Object.entries(details.labels).slice(0, 5)
       );
 
-    // Create label cards
-    Object.entries(labelsToShow).forEach(([key, value]) => {
+        Object.entries(labelsToShow).forEach(([key, value]) => {
       const labelCard = document.createElement('div');
       labelCard.className = 'metric-card';
 
       const title = document.createElement('div');
       title.className = 'metric-title';
-      title.textContent = key.split('.').pop(); // Show only the last part of the label name
-
+      title.textContent = key.split('.').pop();
       const valueElement = document.createElement('div');
       valueElement.className = 'metric-value';
       valueElement.textContent = value.length > 100 ? value.substring(0, 97) + '...' : value;
 
-      // Add tooltip for long values
-      if (value.length > 100) {
+            if (value.length > 100) {
         valueElement.title = value;
       }
 
