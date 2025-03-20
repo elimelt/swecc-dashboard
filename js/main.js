@@ -1,177 +1,135 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Add development mode indicator if needed
   if (IS_DEV) {
-    handleDevMode()
+    handleDevMode();
   }
 
-  auth.initialize()
-  auth.subscribe(handleAuthStateChange)
+  // Initialize authentication
+  auth.initialize();
+  auth.subscribe(handleAuthStateChange);
 
-  setupEventListeners()
+  // Set up UI event listeners
+  setupEventListeners();
 
-  dashboard.initialize()
-})
+  // Initialize dashboard
+  dashboard.initialize();
+});
 
-function handleDevMode () {
-  const apiHost = new URL(API_BASE_URL).host
-  log(`API endpoint set to: ${API_BASE_URL}`)
+// Special handling for development mode
+function handleDevMode() {
+  const apiHost = new URL(API_BASE_URL).host;
+  log(`API endpoint set to: ${API_BASE_URL}`);
 
-  const devIndicator = document.createElement('div')
-  devIndicator.style.position = 'fixed'
-  devIndicator.style.bottom = '10px'
-  devIndicator.style.right = '10px'
-  devIndicator.style.padding = '5px 10px'
-  devIndicator.style.background = '#f0f0f0'
-  devIndicator.style.border = '1px solid #ccc'
-  devIndicator.style.borderRadius = '4px'
-  devIndicator.style.fontSize = '12px'
-  devIndicator.textContent = `Dev Mode (API: ${apiHost})`
-  document.body.appendChild(devIndicator)
-
-  if (IS_DEV) {
-    window.addEventListener('error', function (event) {
-      if (
-        event.message.includes('Failed to fetch') ||
-        event.message.includes('NetworkError')
-      ) {
-        provideMockData()
-      }
-    })
-  }
+  // Add development mode indicator
+  const devIndicator = document.createElement('div');
+  devIndicator.style.position = 'fixed';
+  devIndicator.style.bottom = '10px';
+  devIndicator.style.right = '10px';
+  devIndicator.style.padding = '5px 10px';
+  devIndicator.style.background = '#f0f0f0';
+  devIndicator.style.border = '1px solid #ccc';
+  devIndicator.style.borderRadius = '4px';
+  devIndicator.style.fontSize = '12px';
+  devIndicator.textContent = `Dev Mode (API: ${apiHost})`;
+  document.body.appendChild(devIndicator);
 }
 
-function provideMockData () {
-  metricsService.fetchContainers = async function () {
-    log('Using mock container data')
-    this.containersList = {
-      'nginx-web': 'running',
-      mongodb: 'running',
-      'redis-cache': 'running',
-      elasticsearch: 'paused',
-      'postgres-db': 'stopped'
-    }
-    this.lastFetchTimestamp = new Date()
-    return true
-  }
+function handleAuthStateChange(state) {
+  const {
+    isAuthenticated,
+    loading,
+    isAdmin,
+    isVerified,
+    member,
+    error
+  } = state;
 
-  metricsService.fetchContainerDetails = async function (containerName) {
-    log(`Using mock details for ${containerName}`)
-    const mockDetails = {
-      short_id: '3072978f835e',
-      name: containerName,
-      image: `${containerName.split('-')[0]}:latest`,
-      created_at: new Date(
-        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      labels: {
-        build_version: '2.11.0-ls332',
-        'org.opencontainers.image.title': containerName,
-        'org.opencontainers.image.description': `Mock container for ${containerName}`,
-        'org.opencontainers.image.version': '1.0.0',
-        'org.opencontainers.image.vendor': 'Mock Data Inc.'
-      },
-      command: 'npm start',
-      ports: {
-        '80/tcp': [
-          {
-            HostIp: '0.0.0.0',
-            HostPort: '80'
-          }
-        ],
-        '443/tcp': [
-          {
-            HostIp: '0.0.0.0',
-            HostPort: '443'
-          }
-        ]
-      }
-    }
+  const loadingMessage = document.getElementById('loading-message');
+  const loggedOutView = document.getElementById('logged-out-view');
+  const loggedInView = document.getElementById('logged-in-view');
+  const loginForm = document.getElementById('login-form');
+  const dashboardView = document.getElementById('dashboard');
+  const accessDeniedView = document.getElementById('access-denied');
 
-    this.containerDetails[containerName] = mockDetails
-    return mockDetails
-  }
-}
-
-function handleAuthStateChange (state) {
-  const { isAuthenticated, loading, isAdmin, isVerified, member, error } = state
-
-  const loadingMessage = document.getElementById('loading-message')
-  const loggedOutView = document.getElementById('logged-out-view')
-  const loggedInView = document.getElementById('logged-in-view')
-  const loginForm = document.getElementById('login-form')
-  const dashboardView = document.getElementById('dashboard')
-  const accessDeniedView = document.getElementById('access-denied')
-
+  // Handle loading state
   if (loading) {
-    loadingMessage.style.display = 'block'
-    loggedOutView.style.display = 'none'
-    loggedInView.style.display = 'none'
-    loginForm.style.display = 'none'
-    dashboardView.style.display = 'none'
-    accessDeniedView.style.display = 'none'
-    return
+    loadingMessage.style.display = 'block';
+    loggedOutView.style.display = 'none';
+    loggedInView.style.display = 'none';
+    loginForm.style.display = 'none';
+    dashboardView.style.display = 'none';
+    accessDeniedView.style.display = 'none';
+    return;
   } else {
-    loadingMessage.style.display = 'none'
+    loadingMessage.style.display = 'none';
   }
 
+  // Handle authentication state
   if (isAuthenticated && member) {
-    loggedOutView.style.display = 'none'
-    loggedInView.style.display = 'block'
-    loginForm.style.display = 'none'
+    // Show logged in view
+    loggedOutView.style.display = 'none';
+    loggedInView.style.display = 'block';
+    loginForm.style.display = 'none';
 
-    document.getElementById('username').textContent = member.username
-    document.getElementById('admin-badge').style.display = isAdmin
-      ? 'inline-block'
-      : 'none'
-    document.getElementById('verified-badge').style.display = isVerified
-      ? 'inline-block'
-      : 'none'
+    // Update user info display
+    document.getElementById('username').textContent = member.username;
+    document.getElementById('admin-badge').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('verified-badge').style.display = isVerified ? 'inline-block' : 'none';
 
+    // Show dashboard only for verified users
     if (isVerified) {
-      dashboardView.style.display = 'block'
-      accessDeniedView.style.display = 'none'
+      dashboardView.style.display = 'block';
+      accessDeniedView.style.display = 'none';
 
-      dashboard.loadDashboard()
+      // Load dashboard data if not already loaded
+      dashboard.loadDashboard();
     } else {
-      dashboardView.style.display = 'none'
-      accessDeniedView.style.display = 'block'
+      dashboardView.style.display = 'none';
+      accessDeniedView.style.display = 'block';
     }
   } else {
-    loggedOutView.style.display = 'block'
-    loggedInView.style.display = 'none'
-    dashboardView.style.display = 'none'
-    accessDeniedView.style.display = 'none'
+    // Show logged out view
+    loggedOutView.style.display = 'block';
+    loggedInView.style.display = 'none';
+    dashboardView.style.display = 'none';
+    accessDeniedView.style.display = 'none';
   }
 
-  const loginError = document.getElementById('login-error')
+  // Display any errors
+  const loginError = document.getElementById('login-error');
 
   if (error) {
-    loginError.textContent = error
+    loginError.textContent = error;
   } else {
-    loginError.textContent = ''
+    loginError.textContent = '';
   }
 }
 
-function setupEventListeners () {
+function setupEventListeners() {
+  // Show login form button
   document.getElementById('show-login-btn').addEventListener('click', () => {
-    document.getElementById('login-form').style.display = 'block'
-    auth.clearError()
-  })
+    document.getElementById('login-form').style.display = 'block';
+    auth.clearError();
+  });
 
+  // Cancel button
   document.querySelector('.cancel-btn').addEventListener('click', () => {
-    document.getElementById('login-form').style.display = 'none'
-    auth.clearError()
-  })
+    document.getElementById('login-form').style.display = 'none';
+    auth.clearError();
+  });
 
+  // Logout button
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    await auth.logout()
-  })
+    await auth.logout();
+  });
 
-  document.getElementById('login').addEventListener('submit', async e => {
-    e.preventDefault()
+  // Login form submission
+  document.getElementById('login').addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    const username = document.getElementById('login-username').value
-    const password = document.getElementById('login-password').value
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
 
-    await auth.login(username, password)
-  })
+    await auth.login(username, password);
+  });
 }
