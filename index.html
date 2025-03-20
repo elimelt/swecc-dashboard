@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auth Template</title>
+    <title>Container Metrics Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Auth Template</h1>
+            <h1>Container Metrics Dashboard</h1>
             <div id="auth-status">
                 <p id="loading-message">Loading...</p>
-                <div id="logged-out-view" class="hidden">
+                <div id="logged-out-view" style="display: none;">
                     <button id="show-login-btn">Login</button>
-                    <button id="show-register-btn">Register</button>
                 </div>
-                <div id="logged-in-view" class="hidden">
+                <div id="logged-in-view" style="display: none;">
                     <p>Welcome, <span id="username"></span>!</p>
                     <div id="user-info">
-                        <p id="admin-badge" class="hidden">Admin</p>
-                        <p id="verified-badge" class="hidden">Verified</p>
+                        <p id="admin-badge" style="display: none;">Admin</p>
+                        <p id="verified-badge" style="display: none;">Verified</p>
                     </div>
                     <button id="logout-btn">Logout</button>
                 </div>
@@ -28,7 +27,7 @@
         </header>
 
         <main>
-            <div id="login-form" class="auth-form" class="hidden">
+            <div id="login-form" class="auth-form" style="display: none;">
                 <h2>Login</h2>
                 <form id="login">
                     <div class="form-group">
@@ -47,61 +46,147 @@
                 </form>
             </div>
 
-            <div id="register-form" class="auth-form" class="hidden">
-                <h2>Register</h2>
-                <form id="register">
-                    <div class="form-group">
-                        <label for="register-first-name">First Name</label>
-                        <input type="text" id="register-first-name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-last-name">Last Name</label>
-                        <input type="text" id="register-last-name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-username">Username</label>
-                        <input type="text" id="register-username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-email">Email</label>
-                        <input type="email" id="register-email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Password</label>
-                        <input type="password" id="register-password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-discord">Discord Username</label>
-                        <input type="text" id="register-discord" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit">Register</button>
-                        <button type="button" class="cancel-btn">Cancel</button>
-                    </div>
-                    <p id="register-error" class="error-message"></p>
-                </form>
+            <div id="access-denied" style="display: none;">
+                <h2>Access Denied</h2>
+                <p>You need to be a verified user to access this dashboard.</p>
             </div>
 
-            <div id="content" class="hidden">
-                <h2>Protected Content</h2>
-                <p>This content is only visible to authenticated users.</p>
-                
-                <div id="admin-content" class="hidden">
-                    <h3>Admin Section</h3>
-                    <p>This section is only visible to administrators.</p>
+            <div id="dashboard" style="display: none;">
+                <div class="dashboard-header">
+                    <h2>Container Metrics</h2>
+                    <div class="dashboard-controls">
+                        <select id="container-selector">
+                            <option value="">Loading containers...</option>
+                        </select>
+                        <label for="refresh-interval">Auto Refresh:</label>
+                        <select id="refresh-interval">
+                            <option value="0">Off</option>
+                            <option value="30" selected>30 seconds</option>
+                            <option value="60">1 minute</option>
+                            <option value="300">5 minutes</option>
+                        </select>
+                        <button id="refresh-btn">Refresh Now</button>
+                    </div>
                 </div>
-                
-                <div id="verified-content" class="hidden">
-                    <h3>Verified User Section</h3>
-                    <p>This section is only visible to verified users.</p>
+
+                <div id="container-overview" class="metric-panel">
+                    <h3>Overview</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">Status</div>
+                            <div id="metric-status" class="metric-value">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Started At</div>
+                            <div id="metric-started" class="metric-value">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Health</div>
+                            <div id="metric-health" class="metric-value">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Restarts</div>
+                            <div id="metric-restarts" class="metric-value">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div id="memory-panel" class="metric-panel">
+                        <h3>Memory</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-title">Usage</div>
+                                <div id="metric-memory-usage" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Limit</div>
+                                <div id="metric-memory-limit" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card wide-card">
+                                <div class="metric-title">Percentage</div>
+                                <div class="progress-container">
+                                    <div id="memory-usage-bar" class="progress-bar"></div>
+                                    <span id="metric-memory-percent" class="progress-text">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="disk-panel" class="metric-panel">
+                        <h3>Disk I/O</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-title">Read</div>
+                                <div id="metric-disk-read" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Write</div>
+                                <div id="metric-disk-write" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Operations</div>
+                                <div id="metric-disk-ops" class="metric-value">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div id="network-panel" class="metric-panel">
+                        <h3>Network</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-title">Received</div>
+                                <div id="metric-net-rx" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Transmitted</div>
+                                <div id="metric-net-tx" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Packets (RX/TX)</div>
+                                <div id="metric-net-packets" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">Errors (RX/TX)</div>
+                                <div id="metric-net-errors" class="metric-value">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cpu-panel" class="metric-panel">
+                        <h3>CPU</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-title">Online CPUs</div>
+                                <div id="metric-cpu-online" class="metric-value">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-title">System Usage</div>
+                                <div id="metric-cpu-system" class="metric-value">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="history-panel" class="metric-panel">
+                    <h3>History</h3>
+                    <div id="history-chart-container">
+                        <canvas id="history-chart"></canvas>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/metrics.js"></script>
+    <script src="js/dashboard.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
