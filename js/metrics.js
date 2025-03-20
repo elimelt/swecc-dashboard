@@ -1,5 +1,3 @@
-import { POLL_USAGE } from './constants'
-
 class MetricsService {
   constructor () {
     this.containersList = {}
