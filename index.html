@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Container Metrics Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -52,6 +54,11 @@
             </div>
 
             <div id="dashboard" style="display: none;">
+                <div id="dashboard-loading" class="loading-indicator" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+
                 <div class="dashboard-header">
                     <h2>Container Metrics</h2>
                     <div class="dashboard-controls">
@@ -70,108 +77,76 @@
                 </div>
 
                 <div id="container-overview" class="metric-panel">
-                    <h3>Overview</h3>
+                    <h3>Container Overview</h3>
                     <div class="metrics-grid">
                         <div class="metric-card">
                             <div class="metric-title">Status</div>
                             <div id="metric-status" class="metric-value">-</div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-title">Started At</div>
-                            <div id="metric-started" class="metric-value">-</div>
+                            <div class="metric-title">Container ID</div>
+                            <div id="metric-container-id" class="metric-value">-</div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-title">Health</div>
-                            <div id="metric-health" class="metric-value">-</div>
+                            <div class="metric-title">Created At</div>
+                            <div id="metric-created" class="metric-value">-</div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-title">Restarts</div>
-                            <div id="metric-restarts" class="metric-value">-</div>
+                            <div class="metric-title">Uptime</div>
+                            <div id="metric-uptime" class="metric-value">-</div>
+                        </div>
+                        <div class="metric-card wide-card">
+                            <div class="metric-title">Image</div>
+                            <div id="metric-image" class="metric-value">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="container-details" class="metric-panel" style="display: none;">
+                    <h3>Container Details</h3>
+                    <div class="detail-grid">
+                        <div class="detail-row">
+                            <div class="detail-label">Name:</div>
+                            <div id="detail-name" class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">ID:</div>
+                            <div id="detail-id" class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Image:</div>
+                            <div id="detail-image" class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Created:</div>
+                            <div id="detail-created" class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Command:</div>
+                            <div id="detail-command" class="detail-value">-</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="dashboard-grid">
-                    <div id="memory-panel" class="metric-panel">
-                        <h3>Memory</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-title">Usage</div>
-                                <div id="metric-memory-usage" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Limit</div>
-                                <div id="metric-memory-limit" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card wide-card">
-                                <div class="metric-title">Percentage</div>
-                                <div class="progress-container">
-                                    <div id="memory-usage-bar" class="progress-bar"></div>
-                                    <span id="metric-memory-percent" class="progress-text">-</span>
-                                </div>
-                            </div>
+                    <div id="ports-panel" class="metric-panel" style="display: none;">
+                        <h3>Port Mappings</h3>
+                        <div id="ports-grid" class="metrics-grid">
+                            <!-- Port mappings will be inserted here -->
                         </div>
                     </div>
 
-                    <div id="disk-panel" class="metric-panel">
-                        <h3>Disk I/O</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-title">Read</div>
-                                <div id="metric-disk-read" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Write</div>
-                                <div id="metric-disk-write" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Operations</div>
-                                <div id="metric-disk-ops" class="metric-value">-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dashboard-grid">
-                    <div id="network-panel" class="metric-panel">
-                        <h3>Network</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-title">Received</div>
-                                <div id="metric-net-rx" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Transmitted</div>
-                                <div id="metric-net-tx" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Packets (RX/TX)</div>
-                                <div id="metric-net-packets" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">Errors (RX/TX)</div>
-                                <div id="metric-net-errors" class="metric-value">-</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="cpu-panel" class="metric-panel">
-                        <h3>CPU</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-title">Online CPUs</div>
-                                <div id="metric-cpu-online" class="metric-value">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-title">System Usage</div>
-                                <div id="metric-cpu-system" class="metric-value">-</div>
-                            </div>
+                    <div id="labels-panel" class="metric-panel" style="display: none;">
+                        <h3>Container Labels</h3>
+                        <div id="labels-grid" class="metrics-grid">
+                            <!-- Labels will be inserted here -->
                         </div>
                     </div>
                 </div>
 
                 <div id="history-panel" class="metric-panel">
-                    <h3>History</h3>
+                    <h3>Mock Memory Usage History</h3>
+                    <p class="panel-note">Note: This chart displays simulated data for demonstration purposes.</p>
                     <div id="history-chart-container">
                         <canvas id="history-chart"></canvas>
                     </div>
@@ -179,8 +154,8 @@
             </div>
         </main>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
@@ -189,4 +164,5 @@
     <script src="js/dashboard.js"></script>
     <script src="js/main.js"></script>
 </body>
+
 </html>

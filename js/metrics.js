@@ -1,65 +1,93 @@
 class MetricsService {
   constructor () {
     this.metricsData = []
-    this.containerNames = new Set()
+    this.containersList = {}
+    this.containerDetails = {}
     this.lastFetchTimestamp = null
   }
 
-  async fetchMetrics () {
+  async fetchContainers () {
     try {
-      const response = await withCsrf(() => api.get('/metrics/all'))
+      const response = await withCsrf(() => api.get('/metrics/containers/'))
 
       if (response.status === 200) {
-        this.metricsData = response.data
+        this.containersList = response.data
         this.lastFetchTimestamp = new Date()
 
-        this.containerNames = new Set(
-          this.metricsData.map(metric => metric.container_name)
-        )
-
-        log(
-          `Fetched ${this.metricsData.length} metrics for ${this.containerNames.size} containers`
-        )
+        log(`Fetched ${Object.keys(this.containersList).length} containers`)
         return true
       }
 
       return false
     } catch (error) {
-      log('Error fetching metrics:', error)
+      log('Error fetching containers:', error)
       return false
     }
   }
 
+  async fetchContainerDetails (containerName) {
+    try {
+      const response = await withCsrf(() =>
+        api.get(`/metrics/containers/${containerName}`)
+      )
+
+      if (response.status === 200) {
+        this.containerDetails[containerName] = response.data
+        log(`Fetched details for ${containerName}`)
+        return response.data
+      }
+
+      return null
+    } catch (error) {
+      log(`Error fetching container details for ${containerName}:`, error)
+      return null
+    }
+  }
+
+  getContainers () {
+    return this.containersList
+  }
+
   getContainerNames () {
-    return Array.from(this.containerNames).sort()
+    return Object.keys(this.containersList).sort()
+  }
+
+  getContainerStatus (containerName) {
+    return this.containersList[containerName] || 'unknown'
+  }
+
+  getContainerDetails (containerName) {
+    return this.containerDetails[containerName] || null
   }
 
   getLatestMetricForContainer (containerName) {
-    const containerMetrics = this.metricsData.filter(
-      metric => metric.container_name === containerName
-    )
-
-    containerMetrics.sort(
-      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    )
-
-    return containerMetrics.length > 0 ? containerMetrics[0] : null
+    return {
+      container_name: containerName,
+      status: this.getContainerStatus(containerName),
+      timestamp: new Date().toISOString()
+    }
   }
 
-  getMetricHistoryForContainer (containerName, limit = 30) {
-    const containerMetrics = this.metricsData.filter(
-      metric => metric.container_name === containerName
-    )
+  getMetricHistoryForContainer (containerName, limit = 10) {
+    const status = this.getContainerStatus(containerName)
+    const mockData = []
 
-    containerMetrics.sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    )
+    const now = new Date()
+    for (let i = limit - 1; i >= 0; i--) {
+      const timestamp = new Date(now - i * 60000)
+      mockData.push({
+        container_name: containerName,
+        status: status,
+        timestamp: timestamp.toISOString(),
+        memory_percent: Math.floor(Math.random() * 30) + 10
+      })
+    }
 
-    return containerMetrics.slice(-limit)
+    return mockData
   }
 
   formatBytes (bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes'
+    if (!bytes || bytes === 0) return '0 Bytes'
 
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
@@ -71,15 +99,19 @@ class MetricsService {
   }
 
   formatNumber (num) {
+    if (!num) return '0'
     return new Intl.NumberFormat().format(num)
   }
 
   formatDate (dateString) {
+    if (!dateString) return 'N/A'
     const date = new Date(dateString)
     return date.toLocaleString()
   }
 
   formatDuration (startDateString) {
+    if (!startDateString) return 'N/A'
+
     const startDate = new Date(startDateString)
     const now = new Date()
 
@@ -96,6 +128,51 @@ class MetricsService {
     } else {
       return `${diffMin} min`
     }
+  }
+
+  getPortMappings (containerDetails) {
+    if (!containerDetails || !containerDetails.ports) {
+      return []
+    }
+
+    const portMappings = []
+
+    for (const [containerPort, hostBindings] of Object.entries(
+      containerDetails.ports
+    )) {
+      for (const binding of hostBindings) {
+        portMappings.push({
+          containerPort,
+          hostIp:
+            binding.HostIp === '0.0.0.0' ? 'All Interfaces' : binding.HostIp,
+          hostPort: binding.HostPort
+        })
+      }
+    }
+
+    return portMappings
+  }
+
+  getContainerLabels (containerDetails) {
+    if (!containerDetails || !containerDetails.labels) {
+      return {}
+    }
+
+    const importantLabels = {}
+    const labelsOfInterest = [
+      'build_version',
+      'org.opencontainers.image.version',
+      'org.opencontainers.image.title',
+      'org.opencontainers.image.description'
+    ]
+
+    for (const label of labelsOfInterest) {
+      if (containerDetails.labels[label]) {
+        importantLabels[label] = containerDetails.labels[label]
+      }
+    }
+
+    return importantLabels
   }
 }
 

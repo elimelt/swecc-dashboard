@@ -26,6 +26,69 @@ function handleDevMode () {
   devIndicator.style.fontSize = '12px'
   devIndicator.textContent = `Dev Mode (API: ${apiHost})`
   document.body.appendChild(devIndicator)
+
+  if (IS_DEV) {
+    window.addEventListener('error', function (event) {
+      if (
+        event.message.includes('Failed to fetch') ||
+        event.message.includes('NetworkError')
+      ) {
+        provideMockData()
+      }
+    })
+  }
+}
+
+function provideMockData () {
+  metricsService.fetchContainers = async function () {
+    log('Using mock container data')
+    this.containersList = {
+      'nginx-web': 'running',
+      mongodb: 'running',
+      'redis-cache': 'running',
+      elasticsearch: 'paused',
+      'postgres-db': 'stopped'
+    }
+    this.lastFetchTimestamp = new Date()
+    return true
+  }
+
+  metricsService.fetchContainerDetails = async function (containerName) {
+    log(`Using mock details for ${containerName}`)
+    const mockDetails = {
+      short_id: '3072978f835e',
+      name: containerName,
+      image: `${containerName.split('-')[0]}:latest`,
+      created_at: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+      ).toISOString(),
+      labels: {
+        build_version: '2.11.0-ls332',
+        'org.opencontainers.image.title': containerName,
+        'org.opencontainers.image.description': `Mock container for ${containerName}`,
+        'org.opencontainers.image.version': '1.0.0',
+        'org.opencontainers.image.vendor': 'Mock Data Inc.'
+      },
+      command: 'npm start',
+      ports: {
+        '80/tcp': [
+          {
+            HostIp: '0.0.0.0',
+            HostPort: '80'
+          }
+        ],
+        '443/tcp': [
+          {
+            HostIp: '0.0.0.0',
+            HostPort: '443'
+          }
+        ]
+      }
+    }
+
+    this.containerDetails[containerName] = mockDetails
+    return mockDetails
+  }
 }
 
 function handleAuthStateChange (state) {
