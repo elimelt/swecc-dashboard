@@ -365,7 +365,7 @@ header {
 }
 
 #theme-toggle {
-  position: absolute;
+  position: fixed;
   bottom: var(--spacing-lg);
   right: var(--spacing-lg);
   padding: var(--spacing-xs) var(--spacing-sm);
