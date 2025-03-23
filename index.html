@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWECC Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/logs.css">
 </head>
 
 <body>
@@ -246,6 +247,29 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="logs-panel" class="metric-panel">
+                    <div class="logs-header">
+                        <h3>Container Logs</h3>
+                        <div id="logs-status" class="log-status status-stopped">Logs streaming stopped</div>
+                    </div>
+
+                    <div class="logs-controls">
+                        <button id="start-logs-btn">Start Streaming</button>
+                        <button id="stop-logs-btn" disabled>Stop Streaming</button>
+                        <button id="clear-logs-btn">Clear Logs</button>
+
+                        <div class="auto-scroll-container">
+                            <span>Auto-scroll:</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-scroll-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="logs-container" class="logs-viewer"></div>
+                </div>
             </div>
         </main>
     </div>
@@ -255,6 +279,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/metrics.js"></script>
+    <script src="js/logs.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/dark-mode-toggle.js"></script>
     <script src="js/main.js"></script>

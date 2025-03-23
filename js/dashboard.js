@@ -93,6 +93,10 @@ class Dashboard {
   handleContainerChange (event) {
     const containerName = event.target.value
     this.selectContainer(containerName)
+
+    if (logsService && logsService.isConnected) {
+      logsService.stopLogging()
+    }
   }
 
   async selectContainer (containerName) {
@@ -201,6 +205,11 @@ class Dashboard {
     this.updatePortsPanel(containerDetails)
 
     this.updateLabelsPanel(containerDetails)
+
+    const logsPanel = document.getElementById('logs-panel')
+    if (logsPanel) {
+      logsPanel.style.display = 'block'
+    }
 
     const latestUsage = metricsService.getLatestUsage(this.currentContainer)
     if (latestUsage) {

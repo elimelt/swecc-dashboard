@@ -68,6 +68,10 @@ function handleAuthStateChange (state) {
       accessDeniedView.style.display = 'none'
 
       dashboard.loadDashboard()
+
+      logsService.initialize().catch(error => {
+        log('Error initializing logs service:', error);
+      });
     } else {
       dashboardView.style.display = 'none'
       accessDeniedView.style.display = 'block'
