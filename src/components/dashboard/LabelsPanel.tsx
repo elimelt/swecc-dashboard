@@ -1,0 +1,57 @@
+import React, { useEffect, useState } from 'react';
+import metricsService from '../../services/MetricsService';
+
+interface LabelsPanelProps {
+  containerName: string;
+}
+
+const LabelsPanel: React.FC<LabelsPanelProps> = ({ containerName }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const containerDetails = metricsService.getContainerDetails(containerName);
+    if (containerDetails) {
+      const importantLabels = metricsService.getContainerLabels(containerDetails);
+      
+      if (Object.keys(importantLabels).length > 0) {
+        setLabels(importantLabels);
+      } else if (containerDetails.labels) {
+        // If no important labels, show first 5 labels
+        const firstLabels = Object.fromEntries(
+          Object.entries(containerDetails.labels).slice(0, 5)
+        );
+        setLabels(firstLabels);
+      }
+    }
+  }, [containerName]);
+
+  if (Object.keys(labels).length === 0) {
+    return null;
+  }
+
+  return (
+    <div id="labels-panel" className="metric-panel">
+      <h3>Container Labels</h3>
+      <div id="labels-grid" className="metrics-grid">
+        {Object.entries(labels).map(([key, value], index) => {
+          const displayKey = key.split('.').pop() || key;
+          const displayValue = value.length > 100 ? `${value.substring(0, 97)}...` : value;
+          
+          return (
+            <div key={index} className="metric-card">
+              <div className="metric-title">{displayKey}</div>
+              <div 
+                className="metric-value" 
+                title={value.length > 100 ? value : undefined}
+              >
+                {displayValue}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default LabelsPanel;
