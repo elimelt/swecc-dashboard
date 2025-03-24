@@ -1,28 +1,27 @@
-import React from 'react';
-import { useContainers } from '../../hooks/useContainers';
-import { useContainerDetails } from '../../hooks/useContainerDetails';
+import React from 'react'
+import { useContainers } from '../../hooks/useContainers'
+import { useContainerDetails } from '../../hooks/useContainerDetails'
 
 interface ContainerOverviewProps {
-  containerName: string;
+  containerName: string
 }
 
-const ContainerOverview: React.FC<ContainerOverviewProps> = ({ containerName }) => {
-  const { getContainerStatus } = useContainers();
-  const {
-    details,
-    formatDate,
-    formatDuration
-  } = useContainerDetails(containerName);
+const ContainerOverview: React.FC<ContainerOverviewProps> = ({
+  containerName
+}) => {
+  const { getContainerStatus } = useContainers()
+  const { details, formatDate, formatDuration } =
+    useContainerDetails(containerName)
 
-  const status = getContainerStatus(containerName);
+  const status = getContainerStatus(containerName)
 
   const formatCreatedAt = (createdAt?: string): string => {
-    return createdAt ? formatDate(createdAt) : 'N/A';
-  };
+    return createdAt ? formatDate(createdAt) : 'N/A'
+  }
 
   const formatUptime = (createdAt?: string): string => {
-    return createdAt ? formatDuration(createdAt) : 'N/A';
-  };
+    return createdAt ? formatDuration(createdAt) : 'N/A'
+  }
 
   return (
     <div id='container-overview' className='metric-panel'>
@@ -63,7 +62,7 @@ const ContainerOverview: React.FC<ContainerOverviewProps> = ({ containerName }) 
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ContainerOverview;
+export default ContainerOverview

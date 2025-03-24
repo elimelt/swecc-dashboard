@@ -1,53 +1,56 @@
-import React, { useEffect, useRef } from 'react';
-import { useContainerUsage } from '../../hooks/useContainerUsage';
-import { Chart, ChartData, ChartOptions } from 'chart.js/auto';
+import React, { useEffect, useRef } from 'react'
+import { useContainerUsage } from '../../hooks/useContainerUsage'
+import { Chart, ChartData, ChartOptions } from 'chart.js/auto'
 
 interface UsagePanelProps {
-  containerName: string;
-  refreshInterval?: number;
+  containerName: string
+  refreshInterval?: number
 }
 
-const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval }) => {
-  const { usageData } = useContainerUsage(containerName, refreshInterval);
-  const memoryChartRef = useRef<HTMLCanvasElement | null>(null);
-  const networkChartRef = useRef<HTMLCanvasElement | null>(null);
-  const memoryChartInstance = useRef<Chart | null>(null);
-  const networkChartInstance = useRef<Chart | null>(null);
+const UsagePanel: React.FC<UsagePanelProps> = ({
+  containerName,
+  refreshInterval
+}) => {
+  const { usageData } = useContainerUsage(containerName, refreshInterval)
+  const memoryChartRef = useRef<HTMLCanvasElement | null>(null)
+  const networkChartRef = useRef<HTMLCanvasElement | null>(null)
+  const memoryChartInstance = useRef<Chart | null>(null)
+  const networkChartInstance = useRef<Chart | null>(null)
 
-  const hasData = usageData.length > 0;
+  const hasData = usageData.length > 0
 
   useEffect(() => {
     if (hasData && memoryChartRef.current && networkChartRef.current) {
       if (memoryChartInstance.current) {
-        memoryChartInstance.current.destroy();
+        memoryChartInstance.current.destroy()
       }
       if (networkChartInstance.current) {
-        networkChartInstance.current.destroy();
+        networkChartInstance.current.destroy()
       }
 
-      createMemoryChart();
-      createNetworkChart();
+      createMemoryChart()
+      createNetworkChart()
     }
 
     return () => {
       if (memoryChartInstance.current) {
-        memoryChartInstance.current.destroy();
+        memoryChartInstance.current.destroy()
       }
       if (networkChartInstance.current) {
-        networkChartInstance.current.destroy();
+        networkChartInstance.current.destroy()
       }
-    };
-  }, [usageData, hasData]);
+    }
+  }, [usageData, hasData])
 
   const createMemoryChart = (): void => {
-    if (!memoryChartRef.current) return;
+    if (!memoryChartRef.current) return
 
     const timestamps = usageData.map(data => {
-      const date = new Date(data.timestamp);
-      return date.toLocaleTimeString();
-    });
+      const date = new Date(data.timestamp)
+      return date.toLocaleTimeString()
+    })
 
-    const memoryPercent = usageData.map(data => data.memory_percent);
+    const memoryPercent = usageData.map(data => data.memory_percent)
 
     const chartData: ChartData = {
       labels: timestamps,
@@ -62,7 +65,7 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval 
           tension: 0.4
         }
       ]
-    };
+    }
 
     const chartOptions: ChartOptions = {
       responsive: true,
@@ -82,28 +85,28 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval 
           }
         }
       }
-    };
+    }
 
-    const ctx = memoryChartRef.current.getContext('2d');
+    const ctx = memoryChartRef.current.getContext('2d')
     if (ctx) {
       memoryChartInstance.current = new Chart(ctx, {
         type: 'line',
         data: chartData,
         options: chartOptions
-      });
+      })
     }
-  };
+  }
 
   const createNetworkChart = (): void => {
-    if (!networkChartRef.current) return;
+    if (!networkChartRef.current) return
 
     const timestamps = usageData.map(data => {
-      const date = new Date(data.timestamp);
-      return date.toLocaleTimeString();
-    });
+      const date = new Date(data.timestamp)
+      return date.toLocaleTimeString()
+    })
 
-    const rxBytes = usageData.map(data => data.nw_rx_bytes / 1024);
-    const txBytes = usageData.map(data => data.nw_tx_bytes / 1024);
+    const rxBytes = usageData.map(data => data.nw_rx_bytes / 1024)
+    const txBytes = usageData.map(data => data.nw_tx_bytes / 1024)
 
     const chartData: ChartData = {
       labels: timestamps,
@@ -127,7 +130,7 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval 
           tension: 0.4
         }
       ]
-    };
+    }
 
     const chartOptions: ChartOptions = {
       responsive: true,
@@ -146,41 +149,41 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval 
           }
         }
       }
-    };
+    }
 
-    const ctx = networkChartRef.current.getContext('2d');
+    const ctx = networkChartRef.current.getContext('2d')
     if (ctx) {
       networkChartInstance.current = new Chart(ctx, {
         type: 'line',
         data: chartData,
         options: chartOptions
-      });
+      })
     }
-  };
+  }
 
   if (!hasData) {
-    return null;
+    return null
   }
 
   return (
-    <div id="usage-panel" className="metric-panel">
+    <div id='usage-panel' className='metric-panel'>
       <h3>Usage History</h3>
-      <div className="dashboard-grid">
-        <div className="chart-container">
+      <div className='dashboard-grid'>
+        <div className='chart-container'>
           <h4>Memory Usage</h4>
-          <div className="chart-wrapper">
-            <canvas ref={memoryChartRef} id="memory-chart"></canvas>
+          <div className='chart-wrapper'>
+            <canvas ref={memoryChartRef} id='memory-chart'></canvas>
           </div>
         </div>
-        <div className="chart-container">
+        <div className='chart-container'>
           <h4>Network Traffic</h4>
-          <div className="chart-wrapper">
-            <canvas ref={networkChartRef} id="network-chart"></canvas>
+          <div className='chart-wrapper'>
+            <canvas ref={networkChartRef} id='network-chart'></canvas>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default UsagePanel;
+export default UsagePanel

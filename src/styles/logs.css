@@ -31,7 +31,7 @@
 }
 
 .logs-header h3::before {
-  content: "";
+  content: '';
   display: block;
   width: 12px;
   height: 12px;
@@ -65,7 +65,7 @@
 }
 
 .log-status::before {
-  content: "";
+  content: '';
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -200,7 +200,7 @@
 }
 
 .logs-viewer:hover .log-line:hover::before {
-  content: "⋮";
+  content: '⋮';
   position: absolute;
   left: 0;
   padding: 0 var(--spacing-xxs);
@@ -329,7 +329,7 @@
 .log-line.log-success::before,
 .log-line.log-info::before,
 .log-line.log-stderr::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
@@ -375,7 +375,7 @@
 }
 
 .log-line-expandable::after {
-  content: "⋯";
+  content: '⋯';
   position: absolute;
   right: var(--spacing-sm);
   color: var(--color-text-muted);
@@ -387,7 +387,7 @@
 }
 
 .log-line-expanded::after {
-  content: "⋏";
+  content: '⋏';
 }
 
 .log-line-collapsed {

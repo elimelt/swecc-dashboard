@@ -59,7 +59,8 @@
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 
-  .metric-panel, .nested-panel {
+  .metric-panel,
+  .nested-panel {
     padding: var(--spacing-md);
   }
 
@@ -72,7 +73,7 @@
   .metrics-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .dashboard-controls {
     flex-direction: column;
     align-items: stretch;
@@ -107,7 +108,7 @@
     gap: var(--spacing-md);
     padding: var(--spacing-md);
   }
-  
+
   .auto-scroll-container {
     margin-left: 0;
     width: 100%;
@@ -129,21 +130,23 @@
     padding-top: var(--spacing-sm);
     margin-top: var(--spacing-xs);
   }
-  
+
   .logs-viewer {
     height: 400px;
   }
-  
-  .logs-filter, .logs-level-filter {
+
+  .logs-filter,
+  .logs-level-filter {
     flex: 1;
     width: 100%;
     margin-left: 0;
   }
-  
-  .logs-filter-input, .logs-level-filter select {
+
+  .logs-filter-input,
+  .logs-level-filter select {
     flex: 1;
   }
-  
+
   .logs-timestamps-toggle {
     margin-left: 0;
   }
@@ -153,21 +156,24 @@
   .logs-viewer {
     height: 300px;
   }
-  
+
   .logs-controls {
     flex-direction: column;
     gap: var(--spacing-sm);
   }
-  
+
   .logs-controls button {
     width: 100%;
     justify-content: center;
   }
-  
-  .logs-filter, .logs-level-filter, .logs-timestamps-toggle, .auto-scroll-container {
+
+  .logs-filter,
+  .logs-level-filter,
+  .logs-timestamps-toggle,
+  .auto-scroll-container {
     width: 100%;
   }
-  
+
   .log-time {
     width: auto;
     margin-right: var(--spacing-xs);
@@ -180,11 +186,11 @@
     flex-direction: column;
     gap: var(--spacing-sm);
   }
-  
+
   .form-actions button {
     width: 100%;
   }
-  
+
   .auth-form {
     padding: var(--spacing-md);
   }
@@ -203,12 +209,13 @@
   body {
     padding: var(--spacing-sm);
   }
-  
+
   .container {
     padding: 0;
   }
-  
-  .metric-panel, .nested-panel {
+
+  .metric-panel,
+  .nested-panel {
     padding: var(--spacing-sm);
     border-radius: var(--radius-md);
   }
@@ -216,16 +223,34 @@
 
 /* Column system responsiveness */
 @media (max-width: 992px) {
-  .col-lg-12 { flex: 0 0 100%; max-width: 100%; }
-  .col-lg-6 { flex: 0 0 50%; max-width: 50%; }
+  .col-lg-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .col-lg-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
 }
 
 @media (max-width: 768px) {
-  .col-md-12 { flex: 0 0 100%; max-width: 100%; }
-  .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+  .col-md-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
 }
 
 @media (max-width: 576px) {
-  .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
-  .col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+  .col-sm-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .col-sm-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
 }

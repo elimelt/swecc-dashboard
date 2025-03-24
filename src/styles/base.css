@@ -19,7 +19,12 @@ body {
 }
 
 /* Typography */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.25;
   margin-bottom: var(--spacing-md);
@@ -43,7 +48,8 @@ h4 {
   font-size: 1.125rem;
 }
 
-h5, h6 {
+h5,
+h6 {
   font-size: 1rem;
 }
 
@@ -62,7 +68,8 @@ a:hover {
   text-decoration: underline;
 }
 
-strong, b {
+strong,
+b {
   font-weight: 600;
 }
 
@@ -70,14 +77,16 @@ small {
   font-size: 0.875rem;
 }
 
-code, pre {
+code,
+pre {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background-color: var(--color-neutral-100);
   border-radius: var(--radius-sm);
 }
 
-.dark-mode code, .dark-mode pre {
+.dark-mode code,
+.dark-mode pre {
   background-color: var(--color-neutral-700);
 }
 
