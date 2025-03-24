@@ -1,34 +1,34 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import metricsService, {
   ContainerDetails,
   ContainerStatus
-} from '../../services/MetricsService'
+} from '../../services/MetricsService';
 
 interface ContainerOverviewProps {
-  containerName: string
+  containerName: string;
 }
 
-const ContainerOverview: React.FC<ContainerOverviewProps> = ({
-  containerName
-}) => {
-  const [details, setDetails] = useState<ContainerDetails | null>(null)
-  const [status, setStatus] = useState<ContainerStatus>('unknown')
+const ContainerOverview: React.FC<ContainerOverviewProps> = ({ containerName }) => {
+  const [details, setDetails] = useState<ContainerDetails | null>(null);
+  const [status, setStatus] = useState<ContainerStatus>('unknown');
 
   useEffect(() => {
-    const containerDetails = metricsService.getContainerDetails(containerName)
-    const containerStatus = metricsService.getContainerStatus(containerName)
+    const fetchDetails = async () => {
+      const containerDetails = await metricsService.fetchContainerDetails(containerName);
+      const containerStatus = metricsService.getContainerStatus(containerName);
 
-    setDetails(containerDetails)
-    setStatus(containerStatus)
-  }, [containerName])
+      console.log('Fetched Details:', containerDetails);
+      console.log('Fetched Status:', containerStatus);
 
-  const formatCreatedAt = (createdAt?: string): string => {
-    return createdAt ? metricsService.formatDate(createdAt) : 'N/A'
-  }
+      setDetails(containerDetails);
+      setStatus(containerStatus);
+    };
 
-  const formatUptime = (createdAt?: string): string => {
-    return createdAt ? metricsService.formatDuration(createdAt) : 'N/A'
-  }
+    fetchDetails();
+    const interval = setInterval(fetchDetails, 5000); // Auto-refresh every 5 seconds
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [containerName]);
 
   return (
     <div id='container-overview' className='metric-panel'>
@@ -51,16 +51,17 @@ const ContainerOverview: React.FC<ContainerOverviewProps> = ({
         <div className='metric-card'>
           <div className='metric-title'>Created At</div>
           <div id='metric-created' className='metric-value'>
-            {formatCreatedAt(details?.created_at)}
+            {metricsService.formatDate(details?.created_at || 'unknown')}
           </div>
         </div>
 
         <div className='metric-card'>
           <div className='metric-title'>Uptime</div>
           <div id='metric-uptime' className='metric-value'>
-            {formatUptime(details?.created_at)}
+            {metricsService.formatDuration(details?.created_at || 'unknown')}
           </div>
         </div>
+
         <div className='metric-card wide-card'>
           <div className='metric-title'>Image</div>
           <div id='metric-image' className='metric-value'>
@@ -69,7 +70,7 @@ const ContainerOverview: React.FC<ContainerOverviewProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ContainerOverview
+export default ContainerOverview;

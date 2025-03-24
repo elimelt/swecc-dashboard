@@ -27,14 +27,14 @@ const Dashboard: React.FC = () => {
     setLoading(true);
 
     try {
-      const detailsPromise = metricsService.fetchContainerDetails(containerName);
-      const usagePromise = metricsService.fetchContainerUsage(containerName);
+      const details = await metricsService.fetchContainerDetails(containerName);
+      // const usage = await metricsService.fetchContainerUsage(containerName);
 
-      await detailsPromise;
-      await usagePromise;
-
-      if (logsService.getConnectionStatus()) {
-        logsService.stopLogging();
+      if (details) {
+        setContainers((prev) => ({
+          ...prev,
+          [containerName]: details.status as ContainerStatus,
+        }));
       }
     } catch (err) {
       log('Error selecting container:', err);
@@ -42,7 +42,8 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies needed
+  }, []);
+
 
   // Define the refreshData function with useCallback
   const refreshData = useCallback(async () => {
@@ -51,14 +52,13 @@ const Dashboard: React.FC = () => {
       setError(null);
 
       await metricsService.fetchContainers();
-      setContainers(metricsService.getContainers());
+      setContainers({ ...metricsService.getContainers() }); // Force state update
 
       if (currentContainer) {
-        const detailsPromise = metricsService.fetchContainerDetails(currentContainer);
-        const usagePromise = metricsService.fetchContainerUsage(currentContainer);
+        const details = await metricsService.fetchContainerDetails(currentContainer);
+        // const usage = await metricsService.fetchContainerUsage(currentContainer);
 
-        await detailsPromise;
-        await usagePromise;
+        if (details) setContainers((prev) => ({ ...prev, [currentContainer]: details.status as ContainerStatus }));
       }
     } catch (err) {
       log('Error refreshing data:', err);
@@ -66,7 +66,8 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentContainer]); // Only depend on currentContainer
+  }, [currentContainer]);
+
 
   // Define the loadDashboard function with useCallback
   const loadDashboard = useCallback(async () => {
@@ -83,7 +84,7 @@ const Dashboard: React.FC = () => {
       }
 
       const containersList = metricsService.getContainers();
-      setContainers(containersList);
+      setContainers({ ...containersList });
 
       const containerNames = metricsService.getContainerNames();
       if (containerNames.length > 0) {
