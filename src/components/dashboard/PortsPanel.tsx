@@ -1,20 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import metricsService, { PortMapping } from '../../services/MetricsService';
+import React from 'react';
+import { useContainerDetails } from '../../hooks/useContainerDetails';
 
 interface PortsPanelProps {
   containerName: string;
 }
 
 const PortsPanel: React.FC<PortsPanelProps> = ({ containerName }) => {
-  const [portMappings, setPortMappings] = useState<PortMapping[]>([]);
-
-  useEffect(() => {
-    const containerDetails = metricsService.getContainerDetails(containerName);
-    if (containerDetails) {
-      const mappings = metricsService.getPortMappings(containerDetails);
-      setPortMappings(mappings);
-    }
-  }, [containerName]);
+  const { getPortMappings } = useContainerDetails(containerName);
+  const portMappings = getPortMappings();
 
   if (portMappings.length === 0) {
     return null;

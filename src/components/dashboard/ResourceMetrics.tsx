@@ -1,21 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import metricsService, { UsageData } from '../../services/MetricsService';
+import React from 'react';
+import { useContainerUsage } from '../../hooks/useContainerUsage';
+import { formatBytes, formatNumber } from '../../utils/utils';
 
 interface ResourceMetricsProps {
   containerName: string;
 }
 
 const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
-  const [usageData, setUsageData] = useState<UsageData | null>(null);
-  const [hasData, setHasData] = useState<boolean>(false);
+  const { latestUsage } = useContainerUsage(containerName);
 
-  useEffect(() => {
-    const latestUsage = metricsService.getLatestUsage(containerName);
-    setUsageData(latestUsage);
-    setHasData(!!latestUsage);
-  }, [containerName]);
-
-  if (!hasData) {
+  if (!latestUsage) {
     return null;
   }
 
@@ -39,13 +33,13 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
             <div className="metric-card">
               <div className="metric-title">Usage</div>
               <div id="metric-memory-usage" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.memory_usage_bytes) : '-'}
+                {formatBytes(latestUsage.memory_usage_bytes)}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Limit</div>
               <div id="metric-memory-limit" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.memory_limit_bytes) : '-'}
+                {formatBytes(latestUsage.memory_limit_bytes)}
               </div>
             </div>
             <div className="metric-card wide-card">
@@ -55,12 +49,12 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
                   id="memory-usage-bar" 
                   className="progress-bar" 
                   style={{
-                    width: `${usageData?.memory_percent || 0}%`,
-                    backgroundColor: getMemoryBarColor(usageData?.memory_percent || 0)
+                    width: `${latestUsage.memory_percent}%`,
+                    backgroundColor: getMemoryBarColor(latestUsage.memory_percent)
                   }}
                 ></div>
                 <span id="metric-memory-percent" className="progress-text">
-                  {usageData ? `${usageData.memory_percent}%` : '-'}
+                  {`${latestUsage.memory_percent}%`}
                 </span>
               </div>
             </div>
@@ -73,13 +67,13 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
             <div className="metric-card">
               <div className="metric-title">Online CPUs</div>
               <div id="metric-cpu-online" className="metric-value">
-                {usageData?.online_cpus || '-'}
+                {latestUsage.online_cpus || '-'}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">System Usage</div>
               <div id="metric-cpu-system" className="metric-value">
-                {usageData ? usageData.system_cpu_usage.toExponential(2) : '-'}
+                {latestUsage.system_cpu_usage.toExponential(2)}
               </div>
             </div>
           </div>
@@ -93,21 +87,19 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
             <div className="metric-card">
               <div className="metric-title">Read</div>
               <div id="metric-disk-read" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.disk_read_bytes) : '-'}
+                {formatBytes(latestUsage.disk_read_bytes)}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Write</div>
               <div id="metric-disk-write" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.disk_write_bytes) : '-'}
+                {formatBytes(latestUsage.disk_write_bytes)}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Operations</div>
               <div id="metric-disk-ops" className="metric-value">
-                {usageData ? (
-                  `${metricsService.formatNumber(usageData.disk_reads)} reads / ${metricsService.formatNumber(usageData.disk_writes)} writes`
-                ) : '-'}
+                {`${formatNumber(latestUsage.disk_reads)} reads / ${formatNumber(latestUsage.disk_writes)} writes`}
               </div>
             </div>
           </div>
@@ -119,29 +111,25 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
             <div className="metric-card">
               <div className="metric-title">Received</div>
               <div id="metric-net-rx" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.nw_rx_bytes) : '-'}
+                {formatBytes(latestUsage.nw_rx_bytes)}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Transmitted</div>
               <div id="metric-net-tx" className="metric-value">
-                {usageData ? metricsService.formatBytes(usageData.nw_tx_bytes) : '-'}
+                {formatBytes(latestUsage.nw_tx_bytes)}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Packets (RX/TX)</div>
               <div id="metric-net-packets" className="metric-value">
-                {usageData ? (
-                  `${metricsService.formatNumber(usageData.nw_rx_packets)} / ${metricsService.formatNumber(usageData.nw_tx_packets)}`
-                ) : '-'}
+                {`${formatNumber(latestUsage.nw_rx_packets)} / ${formatNumber(latestUsage.nw_tx_packets)}`}
               </div>
             </div>
             <div className="metric-card">
               <div className="metric-title">Errors (RX/TX)</div>
               <div id="metric-net-errors" className="metric-value">
-                {usageData ? (
-                  `${metricsService.formatNumber(usageData.nw_rx_errors)} / ${metricsService.formatNumber(usageData.nw_tx_errors)}`
-                ) : '-'}
+                {`${formatNumber(latestUsage.nw_rx_errors)} / ${formatNumber(latestUsage.nw_tx_errors)}`}
               </div>
             </div>
           </div>

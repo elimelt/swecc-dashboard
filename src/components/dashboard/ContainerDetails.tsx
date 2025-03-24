@@ -1,17 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import metricsService, { ContainerDetails as ContainerDetailsType } from '../../services/MetricsService';
+import React from 'react';
+import { useContainerDetails } from '../../hooks/useContainerDetails';
 
 interface ContainerDetailsProps {
   containerName: string;
 }
 
 const ContainerDetails: React.FC<ContainerDetailsProps> = ({ containerName }) => {
-  const [details, setDetails] = useState<ContainerDetailsType | null>(null);
-
-  useEffect(() => {
-    const containerDetails = metricsService.getContainerDetails(containerName);
-    setDetails(containerDetails);
-  }, [containerName]);
+  const { details, formatDate } = useContainerDetails(containerName);
 
   if (!details) {
     return null;
@@ -46,7 +41,7 @@ const ContainerDetails: React.FC<ContainerDetailsProps> = ({ containerName }) =>
           <div className="detail-label">Created:</div>
           <div id="detail-created" className="detail-value">
             {details.created_at 
-              ? metricsService.formatDate(details.created_at) 
+              ? formatDate(details.created_at)
               : 'N/A'
             }
           </div>

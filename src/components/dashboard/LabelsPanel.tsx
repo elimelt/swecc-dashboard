@@ -1,28 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import metricsService from '../../services/MetricsService';
+import React from 'react';
+import { useContainerDetails } from '../../hooks/useContainerDetails';
 
 interface LabelsPanelProps {
   containerName: string;
 }
 
 const LabelsPanel: React.FC<LabelsPanelProps> = ({ containerName }) => {
-  const [labels, setLabels] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const containerDetails = metricsService.getContainerDetails(containerName);
-    if (containerDetails) {
-      const importantLabels = metricsService.getContainerLabels(containerDetails);
-      
-      if (Object.keys(importantLabels).length > 0) {
-        setLabels(importantLabels);
-      } else if (containerDetails.labels) {
-        const firstLabels = Object.fromEntries(
-          Object.entries(containerDetails.labels as Record<string, string>).slice(0, 5)
-        );
-        setLabels(firstLabels);
-      }
-    }
-  }, [containerName]);
+  const { getContainerLabels } = useContainerDetails(containerName);
+  const labels = getContainerLabels();
 
   if (Object.keys(labels).length === 0) {
     return null;

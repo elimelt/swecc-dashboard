@@ -1,34 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import metricsService, {
-  ContainerDetails,
-  ContainerStatus
-} from '../../services/MetricsService';
+import React from 'react';
+import { useContainers } from '../../hooks/useContainers';
+import { useContainerDetails } from '../../hooks/useContainerDetails';
 
 interface ContainerOverviewProps {
   containerName: string;
 }
 
 const ContainerOverview: React.FC<ContainerOverviewProps> = ({ containerName }) => {
-  const [details, setDetails] = useState<ContainerDetails | null>(null);
-  const [status, setStatus] = useState<ContainerStatus>('unknown');
+  const { getContainerStatus } = useContainers();
+  const {
+    details,
+    formatDate,
+    formatDuration
+  } = useContainerDetails(containerName);
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      const containerDetails = await metricsService.fetchContainerDetails(containerName);
-      const containerStatus = metricsService.getContainerStatus(containerName);
+  const status = getContainerStatus(containerName);
 
-      console.log('Fetched Details:', containerDetails);
-      console.log('Fetched Status:', containerStatus);
+  const formatCreatedAt = (createdAt?: string): string => {
+    return createdAt ? formatDate(createdAt) : 'N/A';
+  };
 
-      setDetails(containerDetails);
-      setStatus(containerStatus);
-    };
-
-    fetchDetails();
-    const interval = setInterval(fetchDetails, 5000); // Auto-refresh every 5 seconds
-
-    return () => clearInterval(interval); // Cleanup interval on unmount
-  }, [containerName]);
+  const formatUptime = (createdAt?: string): string => {
+    return createdAt ? formatDuration(createdAt) : 'N/A';
+  };
 
   return (
     <div id='container-overview' className='metric-panel'>
@@ -51,17 +45,16 @@ const ContainerOverview: React.FC<ContainerOverviewProps> = ({ containerName }) 
         <div className='metric-card'>
           <div className='metric-title'>Created At</div>
           <div id='metric-created' className='metric-value'>
-            {metricsService.formatDate(details?.created_at || 'unknown')}
+            {formatCreatedAt(details?.created_at)}
           </div>
         </div>
 
         <div className='metric-card'>
           <div className='metric-title'>Uptime</div>
           <div id='metric-uptime' className='metric-value'>
-            {metricsService.formatDuration(details?.created_at || 'unknown')}
+            {formatUptime(details?.created_at)}
           </div>
         </div>
-
         <div className='metric-card wide-card'>
           <div className='metric-title'>Image</div>
           <div id='metric-image' className='metric-value'>

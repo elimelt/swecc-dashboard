@@ -1,29 +1,42 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import logsService, { LogEntry } from '../../services/LogsService';
-import { log } from '../../utils/utils';
+import React, { useState, useRef, useCallback } from 'react';
+import { useContainerLogs, LogEntry } from '../../hooks/useContainerLogs';
 
 interface LogsPanelProps {
   containerName: string;
 }
 
 const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [autoScroll, setAutoScroll] = useState<boolean>(true);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    logs,
+    isStreaming,
+    error: logsError,
+    autoScroll,
+    startLogging,
+    stopLogging,
+    clearLogs,
+    setAutoScroll,
+    escapeHtml,
+    highlightLogContent,
+    highlightSearchTerms
+  } = useContainerLogs(containerName);
+
   const [showTimestamps, setShowTimestamps] = useState<boolean>(true);
   const [filterText, setFilterText] = useState<string>('');
   const [logLevel, setLogLevel] = useState<string>('all');
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
-  const filteredLogs = useCallback(() => {
+    React.useEffect(() => {
+    setError(logsError);
+  }, [logsError]);
+
+    const filteredLogs = useCallback(() => {
     if (!filterText && logLevel === 'all') return logs;
 
     return logs.filter(entry => {
-      // Filter by log level
-      if (logLevel !== 'all') {
+            if (logLevel !== 'all') {
         if (logLevel === 'error' && !['error', 'log_error'].includes(entry.type)) {
           return false;
         }
@@ -35,8 +48,7 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
         }
       }
 
-      // Filter by text
-      if (filterText && (!entry.message || !entry.message.toLowerCase().includes(filterText.toLowerCase()))) {
+            if (filterText && (!entry.message || !entry.message.toLowerCase().includes(filterText.toLowerCase()))) {
         return false;
       }
 
@@ -44,98 +56,32 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
     });
   }, [logs, filterText, logLevel]);
 
-  const handleLogEntry = useCallback((entry: LogEntry) => {
-    log('Log entry received:', entry.type, entry.message?.substring(0, 50));
-    setLogs(prev => {
-      const newLogs = [...prev, entry];
-      if (newLogs.length > 1000) {
-        return newLogs.slice(-1000);
-      }
-      return newLogs;
-    });
-
-    if (autoScroll && logsContainerRef.current) {
-      setTimeout(() => {
-        if (logsContainerRef.current) {
-          logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
-        }
-      }, 0);
-    }
-  }, [autoScroll]);
-
-  const handleConnectionStatusChange = useCallback((connected: boolean) => {
-    log('Connection status changed:', connected);
-    setIsStreaming(connected);
-  }, []);
-
-  // Initialize logs
-  useEffect(() => {
-    logsService.onLogEntry = handleLogEntry;
-    logsService.onConnectionStatusChange = handleConnectionStatusChange;
-
-    setAutoScroll(logsService.isAutoScrollEnabled());
-    setIsStreaming(logsService.getConnectionStatus());
-
-    const initialLogs = logsService.getLogBuffer();
-    if (initialLogs.length > 0) {
-      setLogs(initialLogs);
-    }
-
-    return () => {
-      logsService.onLogEntry = undefined;
-      logsService.onConnectionStatusChange = undefined;
-
-      if (logsService.getConnectionStatus()) {
-        logsService.stopLogging();
-      }
-    };
-  }, [containerName, handleLogEntry, handleConnectionStatusChange]);
-
-  const handleStartLogging = async () => {
+    const handleStartLogging = async () => {
     try {
       setError(null);
-      log('Starting logs for container:', containerName);
-      await logsService.startLogging(containerName);
+      await startLogging();
     } catch (err) {
-      log('Error starting logs:', err);
       setError(err instanceof Error ? err.message : 'Failed to start log streaming');
     }
   };
 
-  const handleStopLogging = () => {
-    try {
-      logsService.stopLogging();
-    } catch (err) {
-      log('Error stopping logs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to stop log streaming');
-    }
-  };
-
-  const handleClearLogs = () => {
-    setLogs([]);
-    logsService.clearLogs();
-    setExpandedLogs(new Set());
-  };
-
-  const handleAutoScrollToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const enabled = e.target.checked;
-    setAutoScroll(enabled);
-    logsService.setAutoScroll(enabled);
-  };
-
-  const handleTimestampsToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleTimestampsToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setShowTimestamps(e.target.checked);
   };
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAutoScrollToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoScroll(e.target.checked);
+  };
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterText(e.target.value);
   };
 
-  const handleLogLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleLogLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLogLevel(e.target.value);
   };
 
-  const toggleExpandLog = (index: number) => {
+    const toggleExpandLog = (index: number) => {
     const newExpandedLogs = new Set(expandedLogs);
     if (expandedLogs.has(index)) {
       newExpandedLogs.delete(index);
@@ -145,21 +91,12 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
     setExpandedLogs(newExpandedLogs);
   };
 
-  const isLogExpandable = (message: string | undefined): boolean => {
+    const isLogExpandable = (message: string | undefined): boolean => {
     if (!message) return false;
     return message.length > 150 || message.includes('\n');
   };
 
-  // Highlight search terms in log message
-  const highlightSearchTerms = (message: string): string => {
-    if (!filterText || !message) return message;
-
-    const escapedFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedFilter})`, 'gi');
-    return message.replace(regex, '<span class="log-search-highlight">$1</span>');
-  };
-
-  const formatLogEntry = (entry: LogEntry, index: number) => {
+    const formatLogEntry = (entry: LogEntry, index: number) => {
     const timestamp = entry.timestamp
       ? new Date(entry.timestamp).toLocaleTimeString()
       : new Date().toLocaleTimeString();
@@ -168,9 +105,9 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
     const canExpand = isLogExpandable(entry.message);
 
     const message = entry.message || '';
-    const escapedMessage = logsService.escapeHtml(message);
-    const highlightedMessage = logsService.highlightLogContent(escapedMessage);
-    const searchHighlightedMessage = filterText ? highlightSearchTerms(highlightedMessage) : highlightedMessage;
+    const escapedMessage = escapeHtml(message);
+    const highlightedMessage = highlightLogContent(escapedMessage);
+    const searchHighlightedMessage = filterText ? highlightSearchTerms(highlightedMessage, filterText) : highlightedMessage;
 
     const logClasses = [
       'log-line',
@@ -217,8 +154,7 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
           try {
             logTimestamp = new Date(timestampMatch[0]).toLocaleTimeString();
           } catch {
-            // Use default timestamp if parsing fails
-          }
+                      }
         }
 
         return (
@@ -284,7 +220,7 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
         </button>
         <button
           id="stop-logs-btn"
-          onClick={handleStopLogging}
+          onClick={stopLogging}
           disabled={!isStreaming}
           className="button-danger"
         >
@@ -292,7 +228,7 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ containerName }) => {
         </button>
         <button
           id="clear-logs-btn"
-          onClick={handleClearLogs}
+          onClick={clearLogs}
         >
           Clear Logs
         </button>

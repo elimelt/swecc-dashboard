@@ -1,25 +1,20 @@
-import React, { useEffect, useState, useRef } from 'react';
-import metricsService, { UsageData } from '../../services/MetricsService';
+import React, { useEffect, useRef } from 'react';
+import { useContainerUsage } from '../../hooks/useContainerUsage';
 import { Chart, ChartData, ChartOptions } from 'chart.js/auto';
 
 interface UsagePanelProps {
   containerName: string;
+  refreshInterval?: number;
 }
 
-const UsagePanel: React.FC<UsagePanelProps> = ({ containerName }) => {
-  const [usageData, setUsageData] = useState<UsageData[]>([]);
-  const [hasData, setHasData] = useState<boolean>(false);
-
+const UsagePanel: React.FC<UsagePanelProps> = ({ containerName, refreshInterval }) => {
+  const { usageData } = useContainerUsage(containerName, refreshInterval);
   const memoryChartRef = useRef<HTMLCanvasElement | null>(null);
   const networkChartRef = useRef<HTMLCanvasElement | null>(null);
   const memoryChartInstance = useRef<Chart | null>(null);
   const networkChartInstance = useRef<Chart | null>(null);
 
-  useEffect(() => {
-    const data = metricsService.getContainerUsage(containerName);
-    setUsageData(data);
-    setHasData(data.length > 0);
-  }, [containerName]);
+  const hasData = usageData.length > 0;
 
   useEffect(() => {
     if (hasData && memoryChartRef.current && networkChartRef.current) {

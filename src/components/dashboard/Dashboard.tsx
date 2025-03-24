@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import metricsService, { ContainerStatus } from '../../services/MetricsService';
-import logsService from '../../services/LogsService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useContainers } from '../../hooks/useContainers';
 import ContainerOverview from './ContainerOverview';
 import ContainerDetails from './ContainerDetails';
 import ResourceMetrics from './ResourceMetrics';
@@ -9,173 +8,55 @@ import PortsPanel from './PortsPanel';
 import LabelsPanel from './LabelsPanel';
 import LogsPanel from './LogsPanel';
 import { REFRESH_INTERVALS, DEFAULT_REFRESH_INTERVAL } from '../../constants';
-import { log } from '../../utils/utils';
 
 const Dashboard: React.FC = () => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [containers, setContainers] = useState<Record<string, ContainerStatus>>({});
-  const [currentContainer, setCurrentContainer] = useState<string | null>(null);
+    const [currentContainer, setCurrentContainer] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(DEFAULT_REFRESH_INTERVAL);
 
-  // Use useRef instead of useState for the timer to avoid re-renders
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const {
+    containers,
+    containerNames,
+    loading: containersLoading,
+    error: containersError,
+    fetchContainers
+  } = useContainers();
 
-  // Define the selectContainer function with useCallback
-  const selectContainer = useCallback(async (containerName: string) => {
-    setCurrentContainer(containerName);
-    setLoading(true);
-
-    try {
-      const details = await metricsService.fetchContainerDetails(containerName);
-      // const usage = await metricsService.fetchContainerUsage(containerName);
-
-      if (details) {
-        setContainers((prev) => ({
-          ...prev,
-          [containerName]: details.status as ContainerStatus,
-        }));
-      }
-    } catch (err) {
-      log('Error selecting container:', err);
-      setError(`An error occurred while loading details for ${containerName}.`);
-    } finally {
-      setLoading(false);
+    useEffect(() => {
+    if (containerNames.length > 0 && !currentContainer) {
+      setCurrentContainer(containerNames[0]);
     }
-  }, []);
+  }, [containerNames, currentContainer]);
 
-
-  // Define the refreshData function with useCallback
-  const refreshData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      await metricsService.fetchContainers();
-      setContainers({ ...metricsService.getContainers() }); // Force state update
-
-      if (currentContainer) {
-        const details = await metricsService.fetchContainerDetails(currentContainer);
-        // const usage = await metricsService.fetchContainerUsage(currentContainer);
-
-        if (details) setContainers((prev) => ({ ...prev, [currentContainer]: details.status as ContainerStatus }));
-      }
-    } catch (err) {
-      log('Error refreshing data:', err);
-      setError('Failed to refresh container data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentContainer]);
-
-
-  // Define the loadDashboard function with useCallback
-  const loadDashboard = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const success = await metricsService.fetchContainers();
-
-      if (!success) {
-        log('Failed to load container data');
-        setError('Failed to load containers. Please try again later.');
-        return false;
-      }
-
-      const containersList = metricsService.getContainers();
-      setContainers({ ...containersList });
-
-      const containerNames = metricsService.getContainerNames();
-      if (containerNames.length > 0) {
-        await selectContainer(containerNames[0]);
-      } else {
-        setError('No containers found.');
-      }
-
-      try {
-        await logsService.initialize();
-      } catch (err) {
-        log('Error initializing logs service:', err);
-      }
-
-      return true;
-    } catch (err) {
-      log('Error loading dashboard:', err);
-      setError('An error occurred while loading the dashboard.');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [selectContainer]); // Only depend on selectContainer
-
-  // Setup auto refresh
-  useEffect(() => {
-    // Clear any existing timer
-    if (refreshTimerRef.current) {
-      clearInterval(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-
-    // Setup new timer if interval > 0
-    if (refreshInterval > 0) {
-      refreshTimerRef.current = setInterval(refreshData, refreshInterval * 1000);
-      log(`Auto-refresh set to ${refreshInterval} seconds`);
-    } else {
-      log('Auto-refresh disabled');
-    }
-
-    // Cleanup on unmount or when dependencies change
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-    };
-  }, [refreshInterval, refreshData]); // Only depend on refreshInterval and refreshData
-
-  // Initial load
-  useEffect(() => {
-    loadDashboard();
-
-    // Cleanup on unmount
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-      if (logsService.getConnectionStatus()) {
-        logsService.stopLogging();
-      }
-    };
-  }, [loadDashboard]); // Only depend on loadDashboard
-
-  const handleContainerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleContainerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const containerName = e.target.value;
-    selectContainer(containerName);
+    setCurrentContainer(containerName);
   };
 
-  const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const interval = parseInt(e.target.value, 10);
     setRefreshInterval(interval);
   };
 
+    const refreshData = useCallback(async () => {
+    await fetchContainers();
+  }, [fetchContainers]);
+
   return (
     <div id="dashboard">
-      {loading && (
+      {containersLoading && (
         <div id="dashboard-loading" className="loading-indicator">
           <div className="loading-spinner"></div>
           <p>Loading data...</p>
         </div>
       )}
 
-      {error && <div className="error-message dashboard-error">{error}</div>}
+      {containersError && <div className="error-message dashboard-error">{containersError}</div>}
 
       <div className="dashboard-header">
         <h2>Container Info</h2>
         <div className="dashboard-controls">
-          <select 
-            id="container-selector" 
+          <select
+            id="container-selector"
             value={currentContainer || ''}
             onChange={handleContainerChange}
             aria-label="Select a container"
@@ -184,8 +65,8 @@ const Dashboard: React.FC = () => {
               <option value="">Loading containers...</option>
             ) : (
               Object.entries(containers).map(([name, status]) => (
-                <option 
-                  key={name} 
+                <option
+                  key={name}
                   value={name}
                   className={`status-${status}`}
                 >
@@ -196,7 +77,7 @@ const Dashboard: React.FC = () => {
           </select>
 
           <label htmlFor="refresh-interval">Auto Refresh:</label>
-          <select 
+          <select
             id="refresh-interval"
             value={refreshInterval}
             onChange={handleRefreshIntervalChange}
@@ -208,7 +89,7 @@ const Dashboard: React.FC = () => {
             ))}
           </select>
 
-          <button id="refresh-btn" onClick={() => refreshData()}>
+          <button id="refresh-btn" onClick={refreshData}>
             Refresh Now
           </button>
         </div>
@@ -217,9 +98,9 @@ const Dashboard: React.FC = () => {
       {currentContainer && (
         <>
           <ContainerOverview containerName={currentContainer} />
-          
+
           <ContainerDetails containerName={currentContainer} />
-          
+
           <ResourceMetrics containerName={currentContainer} />
 
           <div className="dashboard-grid">
@@ -227,8 +108,8 @@ const Dashboard: React.FC = () => {
             <LabelsPanel containerName={currentContainer} />
           </div>
 
-          <UsagePanel containerName={currentContainer} />
-          
+          <UsagePanel containerName={currentContainer} refreshInterval={refreshInterval} />
+
           <LogsPanel containerName={currentContainer} />
         </>
       )}
