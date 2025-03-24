@@ -1,0 +1,231 @@
+/* Base responsive breakpoints */
+/* 
+  - xs: <= 576px (mobile)
+  - sm: > 576px (larger mobile/small tablet)
+  - md: > 768px (tablet)
+  - lg: > 992px (desktop)
+  - xl: > 1200px (large desktop)
+*/
+
+/* Header responsiveness */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  #auth-status {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  #logged-in-view {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  #user-info {
+    margin-bottom: 0;
+  }
+}
+
+/* Dashboard responsiveness */
+@media (max-width: 992px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-controls {
+    width: 100%;
+    margin-top: var(--spacing-sm);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-wrapper {
+    height: 250px;
+  }
+}
+
+/* Metric panels responsiveness */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .metric-panel, .nested-panel {
+    padding: var(--spacing-md);
+  }
+
+  .chart-wrapper {
+    height: 200px;
+  }
+}
+
+@media (max-width: 576px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-controls label {
+    margin-top: var(--spacing-sm);
+  }
+}
+
+/* Container details responsiveness */
+@media (max-width: 576px) {
+  .detail-row {
+    flex-direction: column;
+    padding-bottom: var(--spacing-md);
+  }
+
+  .detail-label {
+    width: 100%;
+    margin-bottom: var(--spacing-xxs);
+  }
+}
+
+/* Logs panel responsiveness */
+@media (max-width: 992px) {
+  .logs-viewer {
+    height: 500px;
+  }
+
+  .logs-controls {
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  .auto-scroll-container {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .logs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+
+  .log-status {
+    width: 100%;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+  }
+  
+  .logs-viewer {
+    height: 400px;
+  }
+  
+  .logs-filter, .logs-level-filter {
+    flex: 1;
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .logs-filter-input, .logs-level-filter select {
+    flex: 1;
+  }
+  
+  .logs-timestamps-toggle {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .logs-viewer {
+    height: 300px;
+  }
+  
+  .logs-controls {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .logs-controls button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .logs-filter, .logs-level-filter, .logs-timestamps-toggle, .auto-scroll-container {
+    width: 100%;
+  }
+  
+  .log-time {
+    width: auto;
+    margin-right: var(--spacing-xs);
+  }
+}
+
+/* Form responsiveness */
+@media (max-width: 576px) {
+  .form-actions {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+  
+  .auth-form {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Theme toggle responsiveness */
+@media (max-width: 768px) {
+  #theme-toggle {
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+  }
+}
+
+/* General padding adjustments for smaller screens */
+@media (max-width: 576px) {
+  body {
+    padding: var(--spacing-sm);
+  }
+  
+  .container {
+    padding: 0;
+  }
+  
+  .metric-panel, .nested-panel {
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+  }
+}
+
+/* Column system responsiveness */
+@media (max-width: 992px) {
+  .col-lg-12 { flex: 0 0 100%; max-width: 100%; }
+  .col-lg-6 { flex: 0 0 50%; max-width: 50%; }
+}
+
+@media (max-width: 768px) {
+  .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+  .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+}
+
+@media (max-width: 576px) {
+  .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
+  .col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+}

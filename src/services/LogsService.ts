@@ -17,19 +17,18 @@ export interface LogsServiceOptions {
 
 class LogsService {
   private socket: WebSocket | null = null;
-  private isConnected: boolean = false;
+  private isConnected = false;
   private containerName: string | null = null;
   private token: string | null = null;
-  private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
-  private reconnectDelay: number = 2000;
-  private autoScrollEnabled: boolean = true;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 2000;
+  private autoScrollEnabled = true;
   private logBuffer: LogEntry[] = [];
-  private bufferMaxSize: number = 1000;
+  private bufferMaxSize = 1000;
   private reconnectTimerId: number | null = null;
-  private intentionalClosure: boolean = false;
+  private intentionalClosure = false;
 
-  // Make these public so they can be changed by the component
   public onLogEntry?: (entry: LogEntry) => void;
   public onConnectionStatusChange?: (isConnected: boolean) => void;
 
@@ -40,9 +39,9 @@ class LogsService {
 
   async initialize(): Promise<boolean> {
     try {
-      await this.fetchJwtToken();
+      const success = await this.fetchJwtToken();
       log('Logs service initialized');
-      return true;
+      return success;
     } catch (error) {
       log('Failed to initialize logs service:', error);
       return false;
@@ -51,7 +50,11 @@ class LogsService {
 
   async fetchJwtToken(): Promise<boolean> {
     try {
-      const response = await api.get('/auth/jwt/');
+      interface TokenResponse {
+        token?: string;
+      }
+
+      const response = await api.get<TokenResponse>('/auth/jwt/');
 
       if (response.status === 200 && response.data.token) {
         this.token = response.data.token;
@@ -84,20 +87,17 @@ class LogsService {
       throw new Error('Please select a container first');
     }
 
-    // Clear previous reconnect timer if exists
     if (this.reconnectTimerId !== null) {
       clearTimeout(this.reconnectTimerId);
       this.reconnectTimerId = null;
     }
 
-    // Reset reconnect attempts
     this.reconnectAttempts = 0;
 
-    // Check token and refresh if needed
     if (!this.token) {
       try {
         await this.fetchJwtToken();
-      } catch (error) {
+      } catch {
         throw new Error('Failed to authenticate for log streaming. Please try again.');
       }
     }
@@ -180,16 +180,17 @@ class LogsService {
         type: 'system',
         message: `Connecting to logs for ${this.containerName}...`
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       log('Error creating WebSocket:', error);
       this.addLogEntry({
         type: 'error',
-        message: `Failed to connect to log service: ${error.message}`
+        message: `Failed to connect to log service: ${errorMessage}`
       });
     }
   }
 
-  private handleSocketOpen(event: Event): void {
+  private handleSocketOpen(): void {
     log('WebSocket connected');
     this.setConnectionStatus(true);
     this.reconnectAttempts = 0;
@@ -215,10 +216,9 @@ class LogsService {
 
   private handleSocketMessage(event: MessageEvent): void {
     try {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(event.data) as LogEntry;
       log('Received message type:', data.type);
 
-      // Handle different message types from the server
       this.addLogEntry(data);
     } catch (error) {
       log('Error parsing log message:', error, event.data);
@@ -237,7 +237,6 @@ class LogsService {
       }`
     );
 
-    // Only attempt to reconnect if the closure wasn't intentional and not a normal closure
     if (!this.intentionalClosure && event.code !== 1000) {
       this.attemptReconnect();
     } else {
@@ -275,12 +274,10 @@ class LogsService {
       })`
     });
 
-    // Clear any existing reconnect timer
     if (this.reconnectTimerId !== null) {
       clearTimeout(this.reconnectTimerId);
     }
 
-    // Set new reconnect timer
     this.reconnectTimerId = window.setTimeout(() => {
       this.reconnectTimerId = null;
       if (!this.isConnected && this.containerName && !this.intentionalClosure) {
@@ -299,9 +296,7 @@ class LogsService {
   }
 
   private addLogEntry(data: LogEntry): void {
-    // Format timestamp if needed
     if (!data.timestamp && data.type === 'log_line') {
-      // Try to extract timestamp from log message if present
       const timestampMatch = data.message?.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
       if (timestampMatch) {
         data.timestamp = timestampMatch[0];
@@ -313,7 +308,6 @@ class LogsService {
       this.logBuffer.shift();
     }
 
-    // Notify the UI about the new log entry
     if (this.onLogEntry) {
       this.onLogEntry(data);
     }
@@ -343,7 +337,7 @@ class LogsService {
       )
       .replace(
         /\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}([.,]\d{3})?(Z|[+-]\d{2}:?\d{2})?\b/g,
-        '<span class="log-highlight-time">$&</span>'
+        '<span class="log-highlight-timestamp">$&</span>'
       );
   }
 
@@ -358,6 +352,7 @@ class LogsService {
   getCurrentContainer(): string | null {
     return this.containerName;
   }
+
 }
 
 export const logsService = new LogsService();

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type ThemeType = 'light' | 'dark';
+export type ThemeType = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -18,14 +18,13 @@ export const useTheme = (): ThemeContextType => {
 };
 
 interface ThemeProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<ThemeType>('light');
 
   useEffect(() => {
-    // Initialize theme from localStorage or system preference
     const savedTheme = localStorage.getItem('theme') as ThemeType | null;
     if (
       savedTheme === 'dark' ||

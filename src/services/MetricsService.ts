@@ -11,7 +11,7 @@ export interface ContainerDetails {
   command?: string;
   ports?: Record<string, Array<{ HostIp: string; HostPort: string }>>;
   labels?: Record<string, string>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface PortMapping {
@@ -38,7 +38,7 @@ export interface UsageData {
   nw_tx_packets: number;
   nw_rx_errors: number;
   nw_tx_errors: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type ContainerStatus = 'running' | 'stopped' | 'error' | 'unknown';

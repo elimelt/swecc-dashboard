@@ -19,7 +19,7 @@ const ResourceMetrics: React.FC<ResourceMetricsProps> = ({ containerName }) => {
     return null;
   }
 
-  const getMemoryBarColor = (memoryPercent: number) => {
+  const getMemoryBarColor = (memoryPercent: number): string => {
     if (memoryPercent > 80) {
       return 'var(--color-danger)';
     } else if (memoryPercent > 60) {

@@ -1,0 +1,22 @@
+/* Import all CSS modules in the correct order */
+
+/* 1. Theme variables (must be first) */
+@import './theme.css';
+
+/* 2. Base styles */
+@import './base.css';
+
+/* 3. Layout components */
+@import './layout.css';
+
+/* 4. UI Components */
+@import './components.css';
+
+/* 5. Dashboard specific styles */
+@import './dashboard.css';
+
+/* 6. Logs panel enhanced styles */
+@import './logs.css';
+
+/* 7. Responsive styles (must be last to override) */
+@import './responsive.css';

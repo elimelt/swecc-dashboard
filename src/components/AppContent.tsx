@@ -7,24 +7,15 @@ import Header from './ui/Header';
 import { IS_DEV } from '../constants';
 import { getCSRF } from '../services/api';
 
-// Add dev mode indicator if needed
-const DevIndicator = () => {
+interface DevIndicatorProps {
+  apiHost: string;
+}
+
+const DevIndicator: React.FC<DevIndicatorProps> = ({ apiHost }) => {
   if (!IS_DEV) return null;
   
-  const apiHost = window.location.hostname === 'localhost' ? 'localhost' : 'api.swecc.org';
-  
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '10px',
-      right: '10px',
-      padding: '5px 10px',
-      background: '#f0f0f0',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      fontSize: '12px',
-      zIndex: 1000,
-    }}>
+    <div className="dev-indicator">
       Dev Mode (API: {apiHost})
     </div>
   );
@@ -33,10 +24,13 @@ const DevIndicator = () => {
 const AppContent: React.FC = () => {
   const { isAuthenticated, isVerified, loading } = useAuth();
   
-  // Initialize CSRF token on component mount
   useEffect(() => {
-    getCSRF();
+    getCSRF().catch(err => {
+      console.error('Failed to initialize CSRF token:', err);
+    });
   }, []);
+
+  const apiHost = window.location.hostname === 'localhost' ? 'localhost' : 'api.swecc.org';
 
   if (loading) {
     return (
@@ -50,7 +44,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="container">
       <Header />
-      <DevIndicator />
+      <DevIndicator apiHost={apiHost} />
       
       <main>
         {!isAuthenticated && <Login />}

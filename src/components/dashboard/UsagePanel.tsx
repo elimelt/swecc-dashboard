@@ -23,7 +23,6 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName }) => {
 
   useEffect(() => {
     if (hasData && memoryChartRef.current && networkChartRef.current) {
-      // Clean up previous charts
       if (memoryChartInstance.current) {
         memoryChartInstance.current.destroy();
       }
@@ -45,7 +44,7 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName }) => {
     };
   }, [usageData, hasData]);
 
-  const createMemoryChart = () => {
+  const createMemoryChart = (): void => {
     if (!memoryChartRef.current) return;
 
     const timestamps = usageData.map(data => {
@@ -100,7 +99,7 @@ const UsagePanel: React.FC<UsagePanelProps> = ({ containerName }) => {
     }
   };
 
-  const createNetworkChart = () => {
+  const createNetworkChart = (): void => {
     if (!networkChartRef.current) return;
 
     const timestamps = usageData.map(data => {

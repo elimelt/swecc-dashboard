@@ -3,8 +3,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './hooks/useAuth';
 import AppContent from './components/AppContent';
 import ThemeToggle from './components/ui/ThemeToggle';
-import './styles/global.css';
-import './styles/logs.css';
+import './styles/index.css';
 
 const App: React.FC = () => {
   return (

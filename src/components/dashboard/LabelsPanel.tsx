@@ -16,9 +16,8 @@ const LabelsPanel: React.FC<LabelsPanelProps> = ({ containerName }) => {
       if (Object.keys(importantLabels).length > 0) {
         setLabels(importantLabels);
       } else if (containerDetails.labels) {
-        // If no important labels, show first 5 labels
         const firstLabels = Object.fromEntries(
-          Object.entries(containerDetails.labels).slice(0, 5)
+          Object.entries(containerDetails.labels as Record<string, string>).slice(0, 5)
         );
         setLabels(firstLabels);
       }

@@ -1,6 +1,6 @@
 import { IS_DEV } from '../constants';
 
-export const log = (...args: any[]): void => {
+export const log = (...args: unknown[]): void => {
   if (IS_DEV) {
     console.log(...args);
   }
@@ -57,7 +57,7 @@ export const formatNumber = (num: number): string => {
   return new Intl.NumberFormat().format(num);
 };
 
-export const debounce = <F extends (...args: any[]) => any>(
+export const debounce = <F extends (...args: unknown[]) => unknown>(
   func: F,
   wait: number
 ): ((...args: Parameters<F>) => void) => {

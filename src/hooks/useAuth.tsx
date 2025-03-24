@@ -8,7 +8,7 @@ import React, {
 import api, { getCSRF } from '../services/api';
 import { log } from '../utils/utils';
 
-interface User {
+export interface User {
   username: string;
   firstName?: string;
   lastName?: string;
@@ -19,7 +19,21 @@ interface User {
   created?: Date;
   gradDate?: Date;
   groups?: { name: string }[];
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+interface ApiUser {
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  discord_username?: string;
+  resume_url?: string;
+  discord_id?: string;
+  profile_picture_url?: string;
+  created?: string;
+  grad_date?: string;
+  groups?: { name: string }[];
+  [key: string]: unknown;
 }
 
 interface AuthContextType {
@@ -38,6 +52,11 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+interface LoginErrorResponse {
+  detail?: string;
+  username?: string;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = (): AuthContextType => {
@@ -54,8 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [error, setError] = useState<string>();
-  const [member, setMember] = useState<User>();
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [member, setMember] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -85,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const getCurrentUser = async (): Promise<User> => {
     try {
-      const res = await api.get('/members/profile/');
+      const res = await api.get<ApiUser>('/members/profile/');
       if (res.status === 200) {
         return deserializeUser(res.data);
       }
@@ -106,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     profile_picture_url: profilePictureUrl,
     created,
     ...rest
-  }: any): User => {
+  }: ApiUser): User => {
     return {
       ...rest,
       firstName,
@@ -124,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await api.get('/auth/session/');
       setIsAuthenticated(true);
-    } catch (err) {
+    } catch {
       setIsAuthenticated(false);
       setLoading(false);
     }
@@ -135,18 +154,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const res = await api.post('/auth/login/', { username, password });
 
       if (res.status === 200) {
-        getCSRF();
+        await getCSRF();
         setIsAuthenticated(true);
-        setError('');
+        setError(undefined);
       } else {
-        handleLoginError(res.data);
+        handleLoginError(res.data as LoginErrorResponse);
       }
-    } catch (err: any) {
-      handleLoginError(err.response?.data);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err && err.response) {
+        const response = err.response as {data?: LoginErrorResponse};
+        handleLoginError(response.data || {});
+      } else {
+        setError('An unknown error occurred. Please try again.');
+        setIsAuthenticated(false);
+      }
     }
   };
 
-  const handleLoginError = (errorData: any) => {
+  const handleLoginError = (errorData: LoginErrorResponse) => {
     if (
       errorData?.detail ===
       'Your account does not have a Discord ID associated with it.'
@@ -166,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (res.status === 200) {
         log('Logout successful');
-        getCSRF();
+        await getCSRF();
         setIsAuthenticated(false);
       } else {
         log('Logout failed');

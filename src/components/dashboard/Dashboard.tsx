@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import metricsService, { ContainerStatus } from '../../services/MetricsService';
 import logsService from '../../services/LogsService';
-import ContainerOverview from './ContainerOverview'
+import ContainerOverview from './ContainerOverview';
 import ContainerDetails from './ContainerDetails';
 import ResourceMetrics from './ResourceMetrics';
 import UsagePanel from './UsagePanel';
@@ -19,28 +19,7 @@ const Dashboard: React.FC = () => {
   const [refreshInterval, setRefreshInterval] = useState<number>(DEFAULT_REFRESH_INTERVAL);
   const [refreshTimer, setRefreshTimer] = useState<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    loadDashboard();
-    return () => {
-      if (refreshTimer) {
-        clearInterval(refreshTimer);
-      }
-      if (logsService.getConnectionStatus()) {
-        logsService.stopLogging();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    setupAutoRefresh();
-    return () => {
-      if (refreshTimer) {
-        clearInterval(refreshTimer);
-      }
-    };
-  }, [refreshInterval]);
-
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -58,12 +37,11 @@ const Dashboard: React.FC = () => {
 
       const containerNames = metricsService.getContainerNames();
       if (containerNames.length > 0) {
-        selectContainer(containerNames[0]);
+        await selectContainer(containerNames[0]);
       } else {
         setError('No containers found.');
       }
 
-      // Initialize logs service
       try {
         await logsService.initialize();
       } catch (err) {
@@ -78,9 +56,9 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const selectContainer = async (containerName: string) => {
+  const selectContainer = useCallback(async (containerName: string) => {
     setCurrentContainer(containerName);
     setLoading(true);
 
@@ -91,7 +69,6 @@ const Dashboard: React.FC = () => {
       await detailsPromise;
       await usagePromise;
 
-      // Stop logs if they're running
       if (logsService.getConnectionStatus()) {
         logsService.stopLogging();
       }
@@ -101,33 +78,9 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleContainerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const containerName = e.target.value;
-    selectContainer(containerName);
-  };
-
-  const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const interval = parseInt(e.target.value, 10);
-    setRefreshInterval(interval);
-  };
-
-  const setupAutoRefresh = () => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer);
-    }
-
-    if (refreshInterval > 0) {
-      const timer = setInterval(refreshData, refreshInterval * 1000);
-      setRefreshTimer(timer);
-      log(`Auto-refresh set to ${refreshInterval} seconds`);
-    } else {
-      log('Auto-refresh disabled');
-    }
-  };
-
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -148,6 +101,53 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, [currentContainer]);
+
+  const setupAutoRefresh = useCallback(() => {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+    }
+
+    if (refreshInterval > 0) {
+      const timer = setInterval(refreshData, refreshInterval * 1000);
+      setRefreshTimer(timer);
+      log(`Auto-refresh set to ${refreshInterval} seconds`);
+    } else {
+      log('Auto-refresh disabled');
+    }
+  }, [refreshInterval, refreshData, refreshTimer]);
+
+  useEffect(() => {
+    loadDashboard();
+
+    return () => {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+      if (logsService.getConnectionStatus()) {
+        logsService.stopLogging();
+      }
+    };
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    setupAutoRefresh();
+
+    return () => {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+    };
+  }, [refreshInterval, setupAutoRefresh]);
+
+  const handleContainerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const containerName = e.target.value;
+    selectContainer(containerName);
+  };
+
+  const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const interval = parseInt(e.target.value, 10);
+    setRefreshInterval(interval);
   };
 
   return (
@@ -198,7 +198,7 @@ const Dashboard: React.FC = () => {
             ))}
           </select>
 
-          <button id="refresh-btn" onClick={refreshData}>
+          <button id="refresh-btn" onClick={() => refreshData()}>
             Refresh Now
           </button>
         </div>

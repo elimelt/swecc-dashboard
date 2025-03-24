@@ -3,25 +3,25 @@ import { useAuth } from '../../hooks/useAuth';
 
 const Login: React.FC = () => {
   const { login, error, clearError } = useAuth();
-  const [showForm, setShowForm] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const handleShowLogin = () => {
+  const handleShowLogin = (): void => {
     setShowForm(true);
     clearError();
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setShowForm(false);
     setUsername('');
     setPassword('');
     clearError();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setIsSubmitting(true);
     
