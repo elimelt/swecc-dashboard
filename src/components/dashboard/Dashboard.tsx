@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import metricsService, { ContainerStatus } from '../../services/MetricsService';
 import logsService from '../../services/LogsService';
 import ContainerOverview from './ContainerOverview';
@@ -17,8 +17,58 @@ const Dashboard: React.FC = () => {
   const [containers, setContainers] = useState<Record<string, ContainerStatus>>({});
   const [currentContainer, setCurrentContainer] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(DEFAULT_REFRESH_INTERVAL);
-  const [refreshTimer, setRefreshTimer] = useState<NodeJS.Timeout | null>(null);
 
+  // Use useRef instead of useState for the timer to avoid re-renders
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Define the selectContainer function with useCallback
+  const selectContainer = useCallback(async (containerName: string) => {
+    setCurrentContainer(containerName);
+    setLoading(true);
+
+    try {
+      const detailsPromise = metricsService.fetchContainerDetails(containerName);
+      const usagePromise = metricsService.fetchContainerUsage(containerName);
+
+      await detailsPromise;
+      await usagePromise;
+
+      if (logsService.getConnectionStatus()) {
+        logsService.stopLogging();
+      }
+    } catch (err) {
+      log('Error selecting container:', err);
+      setError(`An error occurred while loading details for ${containerName}.`);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // No dependencies needed
+
+  // Define the refreshData function with useCallback
+  const refreshData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      await metricsService.fetchContainers();
+      setContainers(metricsService.getContainers());
+
+      if (currentContainer) {
+        const detailsPromise = metricsService.fetchContainerDetails(currentContainer);
+        const usagePromise = metricsService.fetchContainerUsage(currentContainer);
+
+        await detailsPromise;
+        await usagePromise;
+      }
+    } catch (err) {
+      log('Error refreshing data:', err);
+      setError('Failed to refresh container data.');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentContainer]); // Only depend on currentContainer
+
+  // Define the loadDashboard function with useCallback
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
@@ -56,89 +106,48 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectContainer]); // Only depend on selectContainer
 
-  const selectContainer = useCallback(async (containerName: string) => {
-    setCurrentContainer(containerName);
-    setLoading(true);
-
-    try {
-      const detailsPromise = metricsService.fetchContainerDetails(containerName);
-      const usagePromise = metricsService.fetchContainerUsage(containerName);
-
-      await detailsPromise;
-      await usagePromise;
-
-      if (logsService.getConnectionStatus()) {
-        logsService.stopLogging();
-      }
-    } catch (err) {
-      log('Error selecting container:', err);
-      setError(`An error occurred while loading details for ${containerName}.`);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const refreshData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      await metricsService.fetchContainers();
-      setContainers(metricsService.getContainers());
-
-      if (currentContainer) {
-        const detailsPromise = metricsService.fetchContainerDetails(currentContainer);
-        const usagePromise = metricsService.fetchContainerUsage(currentContainer);
-
-        await detailsPromise;
-        await usagePromise;
-      }
-    } catch (err) {
-      log('Error refreshing data:', err);
-      setError('Failed to refresh container data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentContainer]);
-
-  const setupAutoRefresh = useCallback(() => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer);
+  // Setup auto refresh
+  useEffect(() => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+      refreshTimerRef.current = null;
     }
 
+    // Setup new timer if interval > 0
     if (refreshInterval > 0) {
-      const timer = setInterval(refreshData, refreshInterval * 1000);
-      setRefreshTimer(timer);
+      refreshTimerRef.current = setInterval(refreshData, refreshInterval * 1000);
       log(`Auto-refresh set to ${refreshInterval} seconds`);
     } else {
       log('Auto-refresh disabled');
     }
-  }, [refreshInterval, refreshData, refreshTimer]);
 
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [refreshInterval, refreshData]); // Only depend on refreshInterval and refreshData
+
+  // Initial load
   useEffect(() => {
     loadDashboard();
 
+    // Cleanup on unmount
     return () => {
-      if (refreshTimer) {
-        clearInterval(refreshTimer);
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
       }
       if (logsService.getConnectionStatus()) {
         logsService.stopLogging();
       }
     };
-  }, [loadDashboard]);
-
-  useEffect(() => {
-    setupAutoRefresh();
-
-    return () => {
-      if (refreshTimer) {
-        clearInterval(refreshTimer);
-      }
-    };
-  }, [refreshInterval, setupAutoRefresh]);
+  }, [loadDashboard]); // Only depend on loadDashboard
 
   const handleContainerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const containerName = e.target.value;
